@@ -34,7 +34,8 @@ class AndroidAlarmScheduler(
                 messageOn = item.device.msg_on,
                 messageOff = item.device.msg_off,
                 action = true,
-                deviceId = item.device.id
+                deviceId = item.device.id,
+                userId = item.device.user_id
             )
             val alarmItemOff = AlarmItem(
                 time = mapOf(
@@ -46,14 +47,14 @@ class AndroidAlarmScheduler(
                 messageOn = item.device.msg_on,
                 messageOff = item.device.msg_off,
                 action = false,
-                deviceId = item.device.id
+                deviceId = item.device.id,
+                userId = item.device.user_id
             )
             schedule(alarmItemOn,true)
             schedule(alarmItemOff,true)
         }
         Log.w("MainActivity2","Initialize")
     }
-
     override fun deinitialize() {
         val database = AppDatabase.getInstance(context)
         val scheduleDao = database.scheduleDao()
@@ -69,7 +70,8 @@ class AndroidAlarmScheduler(
                 messageOn = item.device.msg_on,
                 messageOff = item.device.msg_off,
                 action = true,
-                deviceId = item.device.id
+                deviceId = item.device.id,
+                userId = item.device.user_id
             )
             val alarmItemOff = AlarmItem(
                 time = mapOf(
@@ -81,14 +83,86 @@ class AndroidAlarmScheduler(
                 messageOn = item.device.msg_on,
                 messageOff = item.device.msg_off,
                 action = false,
-                deviceId = item.device.id
+                deviceId = item.device.id,
+                userId = item.device.user_id
             )
             cancel(alarmItemOn)
             cancel(alarmItemOff)
         }
         Log.e("MainActivity2","Deinitialize")
     }
-
+    override fun initialize(userId: Long) {
+        val database = AppDatabase.getInstance(context)
+        val scheduleDao = database.scheduleDao()
+        val schedulesDevices = scheduleDao.getAllScheduleAndDevicesByUserId(userId)
+        for(item in schedulesDevices) {
+            val alarmItemOn = AlarmItem(
+                time = mapOf(
+                    "hour" to item.schedule.hour_on,
+                    "minute" to item.schedule.minute_on
+                ),
+                frequency = item.schedule.frequency,
+                telephone = item.device.telephone,
+                messageOn = item.device.msg_on,
+                messageOff = item.device.msg_off,
+                action = true,
+                deviceId = item.device.id,
+                userId = item.device.user_id
+            )
+            val alarmItemOff = AlarmItem(
+                time = mapOf(
+                    "hour" to item.schedule.hour_off,
+                    "minute" to item.schedule.minute_off
+                ),
+                frequency = item.schedule.frequency,
+                telephone = item.device.telephone,
+                messageOn = item.device.msg_on,
+                messageOff = item.device.msg_off,
+                action = false,
+                deviceId = item.device.id,
+                userId = item.device.user_id
+            )
+            schedule(alarmItemOn,true)
+            schedule(alarmItemOff,true)
+        }
+        Log.w("MainActivity2","Initialized [USER-SPECIFIC]: $userId")
+    }
+    override fun deinitialize(userId: Long) {
+        val database = AppDatabase.getInstance(context)
+        val scheduleDao = database.scheduleDao()
+        val schedulesDevices = scheduleDao.getAllScheduleAndDevicesByUserId(userId)
+        for(item in schedulesDevices) {
+            val alarmItemOn = AlarmItem(
+                time = mapOf(
+                    "hour" to item.schedule.hour_on,
+                    "minute" to item.schedule.minute_on
+                ),
+                frequency = item.schedule.frequency,
+                telephone = item.device.telephone,
+                messageOn = item.device.msg_on,
+                messageOff = item.device.msg_off,
+                action = true,
+                deviceId = item.device.id,
+                userId = item.device.user_id
+            )
+            val alarmItemOff = AlarmItem(
+                time = mapOf(
+                    "hour" to item.schedule.hour_off,
+                    "minute" to item.schedule.minute_off
+                ),
+                frequency = item.schedule.frequency,
+                telephone = item.device.telephone,
+                messageOn = item.device.msg_on,
+                messageOff = item.device.msg_off,
+                action = false,
+                deviceId = item.device.id,
+                userId = item.device.user_id
+            )
+            cancel(alarmItemOn)
+            cancel(alarmItemOff)
+        }
+        Log.e("MainActivity2","Initialized [USER-SPECIFIC]: $userId")
+    }
     override fun schedule(item: AlarmItem, isInitial: Boolean) {
 
         Log.e("MainActivity2","New Schedule: ${item.action} => hashCode: ${item.hashCode()}")
@@ -106,6 +180,7 @@ class AndroidAlarmScheduler(
             putExtra("TIME_H", item.time["hour"] as Int)
             putExtra("TIME_M", item.time["minute"] as Int)
             putExtra("DEVICE_ID", item.deviceId as Long)
+            putExtra("USER_ID", item.userId)
         }
 
         Log.i("MainActivity2","${item.toString()}:${isInitial.toString()}")
@@ -181,7 +256,6 @@ class AndroidAlarmScheduler(
         )
         */
     }
-
     override fun cancel(item: AlarmItem) {
         alarmManager.cancel(
             PendingIntent.getBroadcast(
@@ -206,7 +280,6 @@ class AndroidAlarmScheduler(
         // Log.d("MainActivity2","IDK TIME: ${specificTimeToday - now}")
         return specificTimeToday
     }
-
     public fun calculateNextSchedule(hour: Int, minute: Int, frequency: Int): Long {
         val now = System.currentTimeMillis()
         val specificTimeToday = getSpecificTimeMillis(hour, minute)
@@ -231,13 +304,9 @@ class AndroidAlarmScheduler(
         }
         */
     }
-
-
     private fun calculateNextFrequency(timeInMillis: Long, frequency: Int): Long {
         return timeInMillis + (frequency * 60 * 60 * 1000)
     }
-
-
     private fun getSpecificTimeMillis(hour: Int, minute: Int, daysToAdd: Int = 0): Long {
         val calendar = Calendar.getInstance()
         calendar.set(Calendar.HOUR_OF_DAY, hour)

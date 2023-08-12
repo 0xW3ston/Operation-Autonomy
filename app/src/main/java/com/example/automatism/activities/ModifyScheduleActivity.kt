@@ -154,7 +154,8 @@ class ModifyScheduleActivity : AppCompatActivity() {
                                 messageOn = device.msg_on,
                                 messageOff = device.msg_off,
                                 action = true,
-                                deviceId = device.id
+                                deviceId = device.id,
+                                userId = device.user_id
                             )
                         )
 
@@ -169,7 +170,8 @@ class ModifyScheduleActivity : AppCompatActivity() {
                                 messageOn = device.msg_on,
                                 messageOff = device.msg_off,
                                 action = false,
-                                deviceId = device.id
+                                deviceId = device.id,
+                                userId = device.user_id
                             )
                         )
 
@@ -186,7 +188,8 @@ class ModifyScheduleActivity : AppCompatActivity() {
                                 messageOn = device.msg_on,
                                 messageOff = device.msg_off,
                                 action = true,
-                                deviceId = deviceId
+                                deviceId = deviceId,
+                                userId = device.user_id
                             ),
                             true
                         )
@@ -202,7 +205,8 @@ class ModifyScheduleActivity : AppCompatActivity() {
                                 messageOn = device.msg_on,
                                 messageOff = device.msg_off,
                                 action = false,
-                                deviceId = deviceId
+                                deviceId = deviceId,
+                                userId = device.user_id
                             ),
                             true
                         )

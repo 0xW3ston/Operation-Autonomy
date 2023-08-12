@@ -7,5 +7,6 @@ data class AlarmItem(
     val messageOn: String,
     val messageOff: String,
     val action: Boolean,
-    val deviceId: Long
+    val deviceId: Long,
+    val userId: Long
 )

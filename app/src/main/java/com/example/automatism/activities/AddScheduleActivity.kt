@@ -1,5 +1,7 @@
 package com.example.automatism.activities
 
+import android.content.Context
+import android.content.SharedPreferences
 import com.example.automatism.database.models.Device
 import android.os.Bundle
 import android.util.Log
@@ -11,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.automatism.database.AppDatabase
 import com.example.automatism.database.models.Schedule
 import com.example.automatism.databinding.ScheduleAddActivityBinding
+import com.example.automatism.utils.AuthHelper
 import com.example.automatism.utils.alarm.AlarmItem
 import com.example.automatism.utils.alarm.AndroidAlarmScheduler
 import com.google.android.material.textfield.TextInputEditText
@@ -25,6 +28,9 @@ class AddScheduleActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val sharedPref: SharedPreferences =
+            this.getSharedPreferences("MyPreferences", Context.MODE_PRIVATE)
 
         // Use data binding to set up the layout
         val binding: ScheduleAddActivityBinding =
@@ -57,7 +63,8 @@ class AddScheduleActivity : AppCompatActivity() {
 
         lifecycleScope.launch(Dispatchers.IO){
             // Populate deviceComboBox with device names (replace with actual data)
-            devicesList = deviceDao.getAllDevices()
+            val current_user = sharedPref.getLong("CURRENT_USER_ID", -1L)
+            devicesList = deviceDao.getAllDevicesByUserId(current_user)
             val deviceNames = devicesList.map { it.name }
             val adapter = ArrayAdapter(this@AddScheduleActivity, android.R.layout.simple_spinner_item, deviceNames)
             binding.deviceComboBox.adapter = adapter
@@ -73,6 +80,7 @@ class AddScheduleActivity : AppCompatActivity() {
             val hourOff = binding.editTextHourOff.text.toString().toInt()
             val minuteOff = binding.editTextMinuteOff.text.toString().toInt()
             val frequency = binding.frequencySlider.progress.toInt()
+            val current_user_id = sharedPref.getLong("CURRENT_USER_ID", -1L)
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
                     val device = deviceDao.getDeviceById(deviceId)
@@ -99,7 +107,8 @@ class AddScheduleActivity : AppCompatActivity() {
                             messageOn = device.msg_on,
                             messageOff = device.msg_off,
                             action = true,
-                            deviceId = deviceId
+                            deviceId = deviceId,
+                            userId = current_user_id
                         ),
                         isInitial = true
                     )
@@ -114,7 +123,8 @@ class AddScheduleActivity : AppCompatActivity() {
                             messageOn = device.msg_on,
                             messageOff = device.msg_off,
                             action = false,
-                            deviceId = deviceId
+                            deviceId = deviceId,
+                            userId = current_user_id
                         ),
                         isInitial = true
                     )

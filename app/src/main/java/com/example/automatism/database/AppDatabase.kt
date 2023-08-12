@@ -7,17 +7,20 @@ import androidx.room.RoomDatabase
 
 import com.example.automatism.database.dao.DeviceDao
 import com.example.automatism.database.dao.ScheduleDao
+import com.example.automatism.database.dao.UserDao
 
+import com.example.automatism.database.models.User
 import com.example.automatism.database.models.Device
 import com.example.automatism.database.models.Schedule
 
 @Database(
-    entities = [Device::class, Schedule::class],
+    entities = [User::class, Device::class, Schedule::class],
     version = 1
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun deviceDao(): DeviceDao
     abstract fun scheduleDao(): ScheduleDao
+    abstract fun userDao(): UserDao
 
     companion object {
         private const val DATABASE_NAME = "myDatabase"

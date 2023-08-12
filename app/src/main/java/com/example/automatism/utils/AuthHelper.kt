@@ -18,6 +18,8 @@ class AuthHelper(private val context: Context) {
         private const val PREF_NAME = "MyPreferences"
         private const val KEY_LOGIN_TIMESTAMP = "LOGIN_TIMESTAMP"
         private const val KEY_AUTH_TOKEN = "jwt"
+        private const val CURRENT_USER_ID = "CURRENT_USER_ID"
+        private const val IS_ACTIVE = "USER_ACTIVE"
     }
 
     private val sharedPref: SharedPreferences =
@@ -36,7 +38,7 @@ class AuthHelper(private val context: Context) {
         return (daysSinceLogin < maxDaysLoggedIn && jwt_token != "")
     }
 
-    suspend fun login(identifiant: String, password: String): Boolean {
+    suspend fun login(identifiant: String, password: String): Any {
         val credentials = mapOf<String,String>(
             "username" to identifiant,
             "password" to password
@@ -47,10 +49,15 @@ class AuthHelper(private val context: Context) {
             if(api.code() == 200) {
                 val loginTimestamp = System.currentTimeMillis()
                 val jwt_token = api.body()?.get("jwt")
+                val user_id = api.body()?.get("user_id")
+                val isActive = api.body()?.get("active")
+                Log.i("MainActivity2","Login::: => $user_id :: ${user_id?.toDouble()}")
                 editor.putLong(KEY_LOGIN_TIMESTAMP, loginTimestamp)
                 editor.putString(KEY_AUTH_TOKEN, jwt_token)
+                editor.putLong(CURRENT_USER_ID, user_id!!.toLong())
+                editor.putBoolean(IS_ACTIVE, isActive!! as Boolean)
                 editor.apply()
-                return true
+                return user_id!!.toLong()
             } else {
                 Log.e("MainActivity2", "Status Code: ${api.code()}")
                 return false
@@ -62,19 +69,21 @@ class AuthHelper(private val context: Context) {
     }
 
     fun logout() {
-        var Scheduler = AndroidAlarmScheduler(context)
+        /*var Scheduler = AndroidAlarmScheduler(context)
         val scope = if (context is androidx.lifecycle.LifecycleOwner) {
             context.lifecycleScope
         } else {
             kotlinx.coroutines.CoroutineScope(Dispatchers.IO)
         }
         scope.launch(Dispatchers.IO) {
-            Scheduler.deinitialize()
-            val editor = sharedPref.edit()
-            editor.remove(KEY_LOGIN_TIMESTAMP)
-            editor.remove(KEY_AUTH_TOKEN)
-            editor.apply()
-        }
+            //Scheduler.deinitialize()
+
+        }*/
+        val editor = sharedPref.edit()
+        editor.remove(KEY_LOGIN_TIMESTAMP)
+        editor.remove(KEY_AUTH_TOKEN)
+        // editor.remove(CURRENT_USER_ID)
+        editor.apply()
     }
 
     private fun getDaysSinceLogin(loginTimestamp: Long): Long {

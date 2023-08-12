@@ -3,7 +3,7 @@
     <item
         android:id="@+id/menuOpt1"
         android:title="Schedules" />
-    <!--<item
+    <item
         android:id="@+id/menuOpt2"
-        android:title="Settinges" />-->
+        android:title="Settinges" />
 </menu>

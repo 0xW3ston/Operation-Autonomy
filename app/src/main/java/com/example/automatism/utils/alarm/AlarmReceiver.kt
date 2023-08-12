@@ -34,8 +34,8 @@ class AlarmReceiver : BroadcastReceiver() {
         val action = intent?.getBooleanExtra("ACTION",false)
         val timeH = intent?.getIntExtra("TIME_H",-1)
         val timeM = intent?.getIntExtra("TIME_M",-1)
-        val deviceID = intent?.getLongExtra("DEVICE_ID",-1)
-
+        val deviceID = intent?.getLongExtra("DEVICE_ID",-1L)
+        val userID = intent?.getLongExtra("USER_ID",-1L)
 
         try {
             if (action == true) {
@@ -75,7 +75,8 @@ class AlarmReceiver : BroadcastReceiver() {
                 messageOn = messageOn!!,
                 messageOff = messageOff!!,
                 action = action!!,
-                deviceId = deviceID!!
+                deviceId = deviceID!!,
+                userId = userID!!
             ),
             isInitial = false
         )

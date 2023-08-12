@@ -112,8 +112,6 @@ class DevicesActivity : AppCompatActivity() {
         }*/
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                Scheduler.deinitialize()
-                Scheduler.initialize()
                 runOnUiThread {
                     Log.e("MainActivity2","Good Initialization")
                     deviceAdapter.updateData()
@@ -304,7 +302,7 @@ class DevicesActivity : AppCompatActivity() {
             return rowMain
         }
 
-        /* fun showEditDialog(device: Device) {
+        fun showEditDialog(device: Device) {
             val builder = AlertDialog.Builder(mContext)
             val inflater = LayoutInflater.from(mContext)
             val dialogView = inflater.inflate(R.layout.device_edit_alertdialog, null)
@@ -344,14 +342,16 @@ class DevicesActivity : AppCompatActivity() {
             }
 
             alertDialog.show()
-        } */
+        }
 
         fun updateData() {
             Log.d("MainActivity2","update status: notify Data set changed")
             val deviceDao = AppDatabase.getInstance(mContext).deviceDao()
             (mContext as AppCompatActivity).lifecycleScope.launch(Dispatchers.IO){
                 try {
-                    mDataList = deviceDao.getAllDevices() as MutableList<Device>
+                    val user_id = (mContext as DevicesActivity).myPreferences.getLong("CURRENT_USER_ID",-1L)
+                    Log.d("MainActivity2","[UPDATE DATA]: current user connected $user_id")
+                    mDataList = deviceDao.getAllDevicesByUserId(user_id) as MutableList<Device>
                     (mContext as AppCompatActivity).runOnUiThread {
                         notifyDataSetChanged()
                     }
@@ -389,10 +389,10 @@ class DevicesActivity : AppCompatActivity() {
                         }
                         true
                     }
-                    /*R.id.menuOpt2 -> {
+                    R.id.menuOpt2 -> {
                         showEditDialog(device)
                         true
-                    }*/
+                    }
                     // Add more cases for other menu items if needed
                     else -> false
                 }
@@ -431,29 +431,39 @@ class DevicesActivity : AppCompatActivity() {
 
     private suspend fun loadNewDevices(devices: List<Map<String,Any>>) {
         val deviceDao = database.deviceDao()
-        val listIds = devices.map { (it["device_id"] as Double).toLong() }
-        // Step 1: Cancellation of All Alarms
-        Scheduler.deinitialize()
+
+        val current_user = myPreferences.getLong("CURRENT_USER_ID", -1L)
+
+        val listIds = devices.map { (it["id"] as Double).toLong() }
+
+        // Step 1: Cancellation of All Alarms (of user)
+        Scheduler.deinitialize(current_user)
+
         // Step 2: Delete non-affected Devices despite having schedules
-        deviceDao.deleteDevicesNotInListById(listIds)
-        Log.e("MainActivity2","loadNewDevices: All Good.")
+        deviceDao.deleteDevicesNotInListByIdsByUserId(listIds, current_user)
+
         // Step 3: Insert/Upsert (New) Devices
         for(device in devices) {
-            val deviceStatus: Boolean? = deviceDao.getDeviceStatusById((device["device_id"] as Double).toLong())
+            val deviceStatus: Boolean? = deviceDao.getDeviceStatusById((device["id"] as Number).toLong())
             val statusValue = if (deviceStatus != null) deviceStatus else false
+            // TODO("DEVICE_ID is changed to ID (which is affecter_id")
             val structuredDeviceMap = mapOf<String,Any>(
-                "id" to device["device_id"]!!,
+                "id" to device["id"]!!,
                 "name" to device["model"]!!,
                 "description" to device["description"]!!,
                 "telephone" to device["tlf"]!!,
                 "msg_on" to device["msg_on"]!!,
                 "msg_off" to device["msg_off"]!!,
+                "user_id" to device["user_id"]!!,
+                "config" to device["config"]!!,
                 "status" to statusValue
             )
             deviceDao.upsert(Device.fromMap(structuredDeviceMap))
         }
         // Step 4: Initialize All Alarms (from the Schedules Table)
-        Scheduler.initialize()
+        // TODO("Change from Initialize ALL to Initialize By UserID")
+        Scheduler.initialize(current_user)
+        Log.i("MainActivity2","Loaded Data from Fetch SUCCESSFULLY")
 
         // Step 5: Signal adapter to change (fetch from local DB) ListView Items
         deviceAdapter.updateData()

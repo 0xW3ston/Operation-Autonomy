@@ -26,6 +26,9 @@ interface ScheduleDao {
     @Query("SELECT * FROM schedules")
     fun getAllScheduleAndDevices(): List<ScheduleDevice>
 
+    @Query("SELECT * FROM schedules WHERE device IN (SELECT id FROM devices WHERE user_id = :userId)")
+    fun getAllScheduleAndDevicesByUserId(userId: Long): List<ScheduleDevice>
+
     @Insert
     fun insertSchedule(schedule: Schedule)
 

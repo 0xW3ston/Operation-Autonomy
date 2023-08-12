@@ -26,6 +26,9 @@ interface DeviceDao {
     @Query("SELECT * FROM devices")
     suspend fun getAllDevices(): List<Device>
 
+    @Query("SELECT * FROM devices WHERE user_id = :userId")
+    suspend fun getAllDevicesByUserId(userId: Long): List<Device>
+
     @Query("SELECT * FROM devices WHERE id = :deviceId")
     suspend fun getDeviceById(deviceId: Long): Device
 
@@ -37,4 +40,7 @@ interface DeviceDao {
 
     @Query("DELETE FROM devices WHERE id NOT IN (:idList)")
     suspend fun deleteDevicesNotInListById(idList: List<Long?>?)
+
+    @Query("DELETE FROM devices WHERE id NOT IN (:idList) AND user_id = :userId")
+    suspend fun deleteDevicesNotInListByIdsByUserId(idList: List<Long?>?,userId: Long)
 }

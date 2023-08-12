@@ -47,6 +47,7 @@ class SchedulesActivity : AppCompatActivity() {
         binding = SchedulesActivityBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        Log.i("MainActivity2","${intent.getLongExtra("device_id", -1L)}")
         binding.fab.setOnClickListener {
             onAddButton()
         }
@@ -128,7 +129,11 @@ class SchedulesActivity : AppCompatActivity() {
             }
 
             btnEdit.setOnClickListener {
-                editSchedule(schedule)
+                try{
+                    editSchedule(schedule)
+                } catch (e: Exception) {
+                    Log.e("MainActivity2","Error Edit schedule: $e")
+                }
             }
 
             return rowMain
@@ -164,7 +169,8 @@ class SchedulesActivity : AppCompatActivity() {
                             messageOn = deviceSchedule.device.msg_on,
                             messageOff = deviceSchedule.device.msg_off,
                             action = true,
-                            deviceId = deviceSchedule.device.id
+                            deviceId = deviceSchedule.device.id,
+                            userId = deviceSchedule.device.user_id
                         )
                     )
 
@@ -179,7 +185,8 @@ class SchedulesActivity : AppCompatActivity() {
                             messageOn = deviceSchedule.device.msg_on,
                             messageOff = deviceSchedule.device.msg_off,
                             action = false,
-                            deviceId = deviceSchedule.device.id
+                            deviceId = deviceSchedule.device.id,
+                            userId = deviceSchedule.device.user_id
                         )
                     )
 

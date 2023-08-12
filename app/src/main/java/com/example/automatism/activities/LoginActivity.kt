@@ -8,6 +8,8 @@ import android.util.Log
 import android.view.Menu
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
+import com.example.automatism.database.AppDatabase
+import com.example.automatism.database.models.User
 import com.example.automatism.databinding.LoginActivityBinding
 import com.example.automatism.utils.AuthHelper
 import kotlinx.coroutines.Dispatchers
@@ -19,40 +21,52 @@ import kotlinx.coroutines.runBlocking
 
 class LoginActivity : AppCompatActivity() {
     private lateinit var binding: LoginActivityBinding
-
+    private lateinit var database: AppDatabase
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = LoginActivityBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        try {
+            binding = LoginActivityBinding.inflate(layoutInflater)
+            setContentView(binding.root)
 
-        val authHelper = AuthHelper(this)
-        // val sharedPref = getSharedPreferences("MyPreferences", Context.MODE_PRIVATE)
-        // binding = LoginActivityBinding.inflate(layoutInflater)
-        // val view = binding.root
-        // setContentView(view)
+            val authHelper = AuthHelper(this)
+            database = AppDatabase.getInstance(this)
+            val userDao = database.userDao()
+            // val sharedPref = getSharedPreferences("MyPreferences", Context.MODE_PRIVATE)
+            // binding = LoginActivityBinding.inflate(layoutInflater)
+            // val view = binding.root
+            // setContentView(view)
 
-        // setContentView(R.layout.login_activity)
+            // setContentView(R.layout.login_activity)
 
-        binding.btnLogin.setOnClickListener {
-            var identifiant = binding.inputIdentifiant.text.toString()
-            var password = binding.inputPassword.text.toString()
-            // Toast.makeText(this,"You have tried to log in as $email identified by $password", Toast.LENGTH_SHORT).show()
-            GlobalScope.launch(Dispatchers.Main) {
-                Log.d("MainActivity2","$identifiant => $password")
-                Log.d("MainActivity2","Before Login")
-                val login = authHelper.login(identifiant, password)
-                Log.d("MainActivity2","After Login ${login.toString()}")
-                if (authHelper.isLoggedIn()) {
-                    Toast.makeText(this@LoginActivity, "Login Successful!", Toast.LENGTH_SHORT)
-                        .show()
-                    Intent(this@LoginActivity, DevicesActivity::class.java).also {
-                        startActivity(it)
-                        finish()
+            binding.btnLogin.setOnClickListener {
+                var identifiant = binding.inputIdentifiant.text.toString()
+                var password = binding.inputPassword.text.toString()
+                // Toast.makeText(this,"You have tried to log in as $email identified by $password", Toast.LENGTH_SHORT).show()
+                GlobalScope.launch(Dispatchers.Main) {
+                    Log.d("MainActivity2", "$identifiant => $password")
+                    Log.d("MainActivity2", "Before Login")
+                    val login_user_id = authHelper.login(identifiant, password)
+                    userDao.upsertUser(
+                        User(
+                            id = login_user_id as Long
+                        )
+                    )
+                    Log.d("MainActivity2", "After Login ${login_user_id.toString()}")
+                    if (authHelper.isLoggedIn()) {
+                        Toast.makeText(this@LoginActivity, "Login Successful!", Toast.LENGTH_SHORT)
+                            .show()
+                        Intent(this@LoginActivity, DevicesActivity::class.java).also {
+                            startActivity(it)
+                            finish()
+                        }
+                    } else {
+                        Toast.makeText(this@LoginActivity, "Login Failed!", Toast.LENGTH_SHORT)
+                            .show()
                     }
-                } else {
-                    Toast.makeText(this@LoginActivity, "Login Failed!", Toast.LENGTH_SHORT).show()
                 }
             }
+        } catch (e: Exception) {
+            Log.e("MainActivity2", "Error onCreate Login: $e")
         }
 
     }

@@ -24,6 +24,7 @@ class BootCompletedReceiver: BroadcastReceiver() {
             scope.launch(Dispatchers.IO) {
                 try {
                     val Scheduler = AndroidAlarmScheduler(context)
+                    // TODO("Initialize ALL ALARMS OF ALL USERS ON THIS PHONE")
                     Scheduler.initialize()
                     Log.i("MainActivity2","[BOOT COMPLETE]: Successfully Initiated all Schedules")
                 } catch (e: Exception) {
