@@ -43,6 +43,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlin.random.Random
 
 class DevicesActivity : AppCompatActivity() {
@@ -191,6 +192,7 @@ class DevicesActivity : AppCompatActivity() {
             val device_description = rowMain.findViewById<TextView>(R.id.textSubtitle)
             val status_button = rowMain.findViewById<Button>(R.id.btnStatus)
             val overflowButton = rowMain.findViewById<ImageButton>(R.id.btnOptions)
+            var my_prefs = (mContext as DevicesActivity).myPreferences
 
             device_model.text = mDataList[position].name
             device_description.text = mDataList[position].description
@@ -268,6 +270,17 @@ class DevicesActivity : AppCompatActivity() {
                 status_button.isEnabled = false
 
                 try {
+                    if(my_prefs.getBoolean("USER_ACTIVE",false)){
+                        (mContext as AppCompatActivity).lifecycleScope.launch(Dispatchers.IO){
+                            var api = RetrofitInstance.api.setDeviceStatus(
+                                idDevice = mDataList[position].id,
+                                authToken = my_prefs.getString("jwt","")!!,
+                                requestBody = mapOf(
+                                    "status" to !(all_tags!!.status)
+                                )
+                            )
+                        }
+                    }
                     if(all_tags!!.status){
                         SMSManager.sendSMS(all_tags.telephone,all_tags.msg_off)
                     } else {
@@ -303,45 +316,162 @@ class DevicesActivity : AppCompatActivity() {
         }
 
         fun showEditDialog(device: Device) {
-            val builder = AlertDialog.Builder(mContext)
+            try {
+                val builder = AlertDialog.Builder(mContext)
+                val inflater = LayoutInflater.from(mContext)
+                val dialogView = inflater.inflate(R.layout.device_edit_alertdialog, null)
+                builder.setView(dialogView)
+
+                // Find views in the custom layout
+                val deviceTitle: TextView = dialogView.findViewById(R.id.device_title)
+                val telephoneInput: EditText = dialogView.findViewById(R.id.telephone_input)
+                val configurationSwitch: Button = dialogView.findViewById(R.id.configuration_switch)
+                val saveButton: Button = dialogView.findViewById(R.id.save_button)
+
+                (mContext as AppCompatActivity).runOnUiThread {
+                    // val isConfigured = deviceDao.getDeviceById(device.id).isConfigured
+                    // configurationSwitch.isChecked = device.isConfigured
+                    if (device.isConfigured) {
+                        configurationSwitch.text = "Deja Configurée"
+                    } else {
+                        configurationSwitch.text = "n'est pas configurée"
+                    }
+                }
+
+                // Set initial values based on the device object
+                deviceTitle.text = "Device ${device.name}"
+                telephoneInput.setText(device.telephone)
+                // TODO("FIX LATER")
+                val alertDialog = builder.create()
+                val window = alertDialog.window
+                if (window != null) {
+                    val windowMetrics = mContext.resources.displayMetrics
+                    val screenHeight = windowMetrics.heightPixels
+                    val marginPercentage = 0.3 // Adjust this percentage as needed
+                    val marginPixels = (screenHeight * marginPercentage).toInt()
+                    val layoutParams = window.attributes
+                    layoutParams.gravity = Gravity.TOP
+                    layoutParams.y = marginPixels // Adjust the margin as needed
+                    window.attributes = layoutParams
+                }
+
+                saveButton.setOnClickListener {
+                    (mContext as AppCompatActivity).lifecycleScope.launch(Dispatchers.IO) {
+                        var A_Device = device
+                        A_Device.telephone = telephoneInput.text.toString()
+                        try {
+                            var token = (mContext as DevicesActivity).myPreferences.getString("jwt", "")
+                            Log.d("MainActivity2","Is Successful: ${token}, HTTP Code: ${device.id} :: ${A_Device.telephone}")
+                            var api = RetrofitInstance.api.setTelephone(
+                                idDevice = device.id,
+                                authToken = token!!,
+                                requestBody = mapOf(
+                                    "telephone" to A_Device.telephone
+                                )
+                            )
+                            deviceDao.update(A_Device)
+                            (mContext as AppCompatActivity).runOnUiThread {
+                                Toast.makeText(
+                                    mContext,
+                                    "Saved Modifications: Telephone",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        } catch (e: Exception) {
+                            (mContext as AppCompatActivity).runOnUiThread {
+                                Toast.makeText(
+                                    mContext,
+                                    "An Error occured, the information no sont pas enregistrées",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                            Log.e("MainActivity2","SAVE BUTTON: Settinges Device Error => $e")
+                        }
+
+                        // Update the device object with edited information
+                        updateData()
+
+                        (mContext as AppCompatActivity).runOnUiThread {
+                            // Handle save action
+                            alertDialog.dismiss()
+                        }
+                    }
+                }
+
+                configurationSwitch.setOnClickListener {
+                    try {
+                        showConfirmDialog(device)
+                    } catch (e: Exception){
+                        Toast.makeText(
+                            mContext,
+                            "An Error Occured, Device Not Configured Properly",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        Log.e("MainActivity2","Configuration Switch Error: $e")
+                    }
+                    updateData()
+                    // TODO("Configuration Activation Code")
+                }
+
+                alertDialog.show()
+            } catch (e: Exception) {
+                Log.e("MainActivity2"," Show Dialog Error: $e")
+            }
+        }
+
+        fun showConfirmDialog(device: Device) {
+            val alertDialogConfirm = AlertDialog.Builder(mContext).create()
             val inflater = LayoutInflater.from(mContext)
-            val dialogView = inflater.inflate(R.layout.device_edit_alertdialog, null)
-            builder.setView(dialogView)
+            val dialogView = inflater.inflate(R.layout.confirm_alertdialog, null)
+            alertDialogConfirm.setView(dialogView)
 
-            // Find views in the custom layout
-            val deviceTitle: TextView = dialogView.findViewById(R.id.device_title)
-            val telephoneInput: EditText = dialogView.findViewById(R.id.telephone_input)
-            val configurationSwitch: Switch = dialogView.findViewById(R.id.configuration_switch)
-            val saveButton: Button = dialogView.findViewById(R.id.save_button)
+            // Access the views inside the dialog
+            val dialogTitle = dialogView.findViewById<TextView>(R.id.confirmDialogTitle)
+            val dialogMessage = dialogView.findViewById<TextView>(R.id.confirmDialogMessage)
+            val btnCancel = dialogView.findViewById<Button>(R.id.confirmDialogBtnCancel)
+            val btnConfirm = dialogView.findViewById<Button>(R.id.confirmDialogBtnConfirm)
 
-            // Set initial values based on the device object
-            deviceTitle.text = "Device ${device.name}"
-            telephoneInput.setText(device.telephone)
-            // TODO("FIX LATER")
-            configurationSwitch.isChecked = true
+            // Set the title and message
+            dialogTitle?.text = "Alert"
+            dialogMessage?.text = "Are you sure you want to continue?"
 
-            val alertDialog = builder.create()
-            val window = alertDialog.window
-            if (window != null) {
-                val windowMetrics = mContext.resources.displayMetrics
-                val screenHeight = windowMetrics.heightPixels
-                val marginPercentage = 0.3 // Adjust this percentage as needed
-                val marginPixels = (screenHeight * marginPercentage).toInt()
-                val layoutParams = window.attributes
-                layoutParams.gravity = Gravity.TOP
-                layoutParams.y = marginPixels // Adjust the margin as needed
-                window.attributes = layoutParams
+            btnCancel.setOnClickListener {
+                alertDialogConfirm.dismiss() // Close the dialog
             }
 
-            saveButton.setOnClickListener {
-                // Update the device object with edited information
-                Toast.makeText(mContext,"Saved Modifications: ${telephoneInput.text.toString()} ==== ${configurationSwitch.isChecked}", Toast.LENGTH_SHORT).show()
+            btnConfirm.setOnClickListener {
 
-                // Handle save action
-                alertDialog.dismiss()
+                val authToken = (mContext as DevicesActivity).myPreferences.getString("jwt", "")
+                (mContext as AppCompatActivity).lifecycleScope.launch(Dispatchers.IO) {
+                    try {
+                        SMSManager.sendConfigSMS(device)
+                        var api = RetrofitInstance.api.setConfigStatus(
+                            idDevice = device.id,
+                            authToken = authToken!!,
+                            requestBody = mapOf(
+                                "isConfigured" to true
+                            )
+                        )
+                        var updated_device = deviceDao.getDeviceById(device.id)
+                        updated_device.isConfigured = true
+                        deviceDao.update(updated_device)
+
+                        // Update UI on the main thread
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(
+                                mContext,
+                                "Device Configured Successfully",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            alertDialogConfirm.dismiss() // Close the dialog
+                        }
+                    } catch (e: Exception) {
+                        Log.e("MainActivity2", "Configuring Error: $e")
+                    }
+                }
             }
 
-            alertDialog.show()
+            alertDialogConfirm.show()
         }
 
         fun updateData() {
@@ -390,7 +520,12 @@ class DevicesActivity : AppCompatActivity() {
                         true
                     }
                     R.id.menuOpt2 -> {
-                        showEditDialog(device)
+                        try{
+                            showEditDialog(device)
+                            Log.d("MainActivity2","yes hello")
+                        } catch (e: Exception) {
+                            Log.e("MainActivity2","sss: $e")
+                        }
                         true
                     }
                     // Add more cases for other menu items if needed
@@ -444,21 +579,33 @@ class DevicesActivity : AppCompatActivity() {
 
         // Step 3: Insert/Upsert (New) Devices
         for(device in devices) {
-            val deviceStatus: Boolean? = deviceDao.getDeviceStatusById((device["id"] as Number).toLong())
-            val statusValue = if (deviceStatus != null) deviceStatus else false
+            // val deviceStatus: Boolean? = deviceDao.getDeviceStatusById((device["id"] as Number).toLong())
+            // val statusValue = if (deviceStatus != null) deviceStatus else false
+            try{
+                Log.i("MainActivity2","AAA:${(device["id"] as Number).toLong()}")
+                Log.i("MainActivity2","AAA:${deviceDao.getDeviceStatusById((device["id"] as Number).toLong())}")
+                Log.i("MainActivity2","${device}")
+                val deviceStatus: Boolean? = deviceDao.getDeviceStatusById((device["id"] as Number).toLong())
+
+                val statusValue = deviceStatus ?: false
+
             // TODO("DEVICE_ID is changed to ID (which is affecter_id")
             val structuredDeviceMap = mapOf<String,Any>(
                 "id" to device["id"]!!,
                 "name" to device["model"]!!,
                 "description" to device["description"]!!,
-                "telephone" to device["tlf"]!!,
+                "telephone" to (device["tlf"] ?: ""),
                 "msg_on" to device["msg_on"]!!,
                 "msg_off" to device["msg_off"]!!,
                 "user_id" to device["user_id"]!!,
                 "config" to device["config"]!!,
+                "isConfigured" to true,
                 "status" to statusValue
             )
             deviceDao.upsert(Device.fromMap(structuredDeviceMap))
+            } catch (e: Exception) {
+                Log.e("MainActivity2","some error here in loading: $e")
+            }
         }
         // Step 4: Initialize All Alarms (from the Schedules Table)
         // TODO("Change from Initialize ALL to Initialize By UserID")

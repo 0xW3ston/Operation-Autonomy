@@ -27,7 +27,7 @@ class SplashActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.splash_activity)
-
+        Log.d("MainActivity2","onCreate of Splash Activity")
         // myPreferences = this.getSharedPreferences("MyPreferences", Context.MODE_PRIVATE)
 
         val Scheduler = AndroidAlarmScheduler(this)

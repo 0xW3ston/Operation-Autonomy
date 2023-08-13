@@ -27,7 +27,7 @@ class LoginActivity : AppCompatActivity() {
         try {
             binding = LoginActivityBinding.inflate(layoutInflater)
             setContentView(binding.root)
-
+            Log.d("MainActivity2","onCreate Login")
             val authHelper = AuthHelper(this)
             database = AppDatabase.getInstance(this)
             val userDao = database.userDao()
@@ -42,26 +42,30 @@ class LoginActivity : AppCompatActivity() {
                 var identifiant = binding.inputIdentifiant.text.toString()
                 var password = binding.inputPassword.text.toString()
                 // Toast.makeText(this,"You have tried to log in as $email identified by $password", Toast.LENGTH_SHORT).show()
-                GlobalScope.launch(Dispatchers.Main) {
+                lifecycleScope.launch(Dispatchers.IO) {
                     Log.d("MainActivity2", "$identifiant => $password")
                     Log.d("MainActivity2", "Before Login")
                     val login_user_id = authHelper.login(identifiant, password)
-                    userDao.upsertUser(
-                        User(
-                            id = login_user_id as Long
-                        )
-                    )
                     Log.d("MainActivity2", "After Login ${login_user_id.toString()}")
                     if (authHelper.isLoggedIn()) {
-                        Toast.makeText(this@LoginActivity, "Login Successful!", Toast.LENGTH_SHORT)
-                            .show()
+                        userDao.upsertUser(
+                            User(
+                                id = login_user_id
+                            )
+                        )
+                        runOnUiThread {
+                            Toast.makeText(this@LoginActivity, "Login Successful!", Toast.LENGTH_SHORT)
+                                .show()
+                        }
                         Intent(this@LoginActivity, DevicesActivity::class.java).also {
                             startActivity(it)
                             finish()
                         }
                     } else {
-                        Toast.makeText(this@LoginActivity, "Login Failed!", Toast.LENGTH_SHORT)
-                            .show()
+                        runOnUiThread {
+                            Toast.makeText(this@LoginActivity, "Login Failed!", Toast.LENGTH_SHORT)
+                                .show()
+                        }
                     }
                 }
             }

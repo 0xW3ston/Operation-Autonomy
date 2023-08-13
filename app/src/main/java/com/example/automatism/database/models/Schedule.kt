@@ -3,6 +3,7 @@ package com.example.automatism.database.models
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
+import com.google.gson.annotations.SerializedName
 
 @Entity(
     tableName = "schedules",
@@ -15,14 +16,24 @@ import androidx.room.PrimaryKey
     )])
 data class Schedule(
     @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
-    val name: String,
-    val minute_on: Int,
-    val hour_on: Int,
-    val minute_off: Int,
-    val hour_off: Int,
-    val frequency: Int,
-    val device: Long
+    @SerializedName("id")
+    var id: Long = 0,
+    @SerializedName("name")
+    var name: String,
+    @SerializedName("minute_on")
+    var minute_on: Int,
+    @SerializedName("hour_on")
+    var hour_on: Int,
+    @SerializedName("minute_off")
+    var minute_off: Int,
+    @SerializedName("hour_off")
+    var hour_off: Int,
+    @SerializedName("frequency")
+    var frequency: Int?,
+    @SerializedName("device")
+    var device: Long,
+    @SerializedName("activated")
+    var activated: Boolean = true
 ) {
     fun toMap(): Map<String, Any> {
         return mapOf(
@@ -32,7 +43,7 @@ data class Schedule(
             "hour_on" to hour_on,
             "minute_off" to minute_off,
             "hour_off" to hour_off,
-            "frequency" to frequency,
+            "frequency" to frequency!!,
             "device" to device
         )
     }
@@ -46,7 +57,7 @@ data class Schedule(
                 hour_on = map["hour_on"] as Int,
                 minute_off = map["minute_off"] as Int,
                 hour_off = map["hour_off"] as Int,
-                frequency = map["frequency"] as Int,
+                frequency = map["frequency"] as Int?,
                 device = map["device"] as Long
             )
         }

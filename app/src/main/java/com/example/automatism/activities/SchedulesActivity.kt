@@ -2,6 +2,7 @@ package com.example.automatism.activities
 
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -20,6 +21,7 @@ import com.example.automatism.database.AppDatabase
 import com.example.automatism.database.models.Device
 import com.example.automatism.database.models.Schedule
 import com.example.automatism.databinding.SchedulesActivityBinding
+import com.example.automatism.utils.RetrofitInstance
 import com.example.automatism.utils.alarm.AlarmItem
 import com.example.automatism.utils.alarm.AndroidAlarmScheduler
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +36,7 @@ class SchedulesActivity : AppCompatActivity() {
     private var dataList: MutableList<Schedule> = mutableListOf()
     private lateinit var database: AppDatabase
     private lateinit var Scheduler: AndroidAlarmScheduler
+    private lateinit var myPreferences: SharedPreferences
 
 
     override fun onResume() {
@@ -48,6 +51,9 @@ class SchedulesActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         Log.i("MainActivity2","${intent.getLongExtra("device_id", -1L)}")
+
+        myPreferences = this.getSharedPreferences("MyPreferences", Context.MODE_PRIVATE)
+
         binding.fab.setOnClickListener {
             onAddButton()
         }
@@ -150,11 +156,21 @@ class SchedulesActivity : AppCompatActivity() {
             }
         }
         private fun deleteSchedule(schedule: Schedule) {
-            GlobalScope.launch(Dispatchers.IO) {
+            (context as AppCompatActivity).lifecycleScope.launch(Dispatchers.IO) {
                 try {
                     val scheduleDao = AppDatabase.getInstance(context).scheduleDao()
                     val Scheduler = (context as SchedulesActivity).Scheduler
 
+                    if((context as SchedulesActivity).myPreferences.getBoolean("USER_ACTIVE",false)){
+                        var api = RetrofitInstance.api.deleteSchedule(
+                            idDevice = schedule.device,
+                            authToken = (context as SchedulesActivity).myPreferences.getString("jwt","")!!,
+                            requestBody = mapOf(
+                                "id" to schedule.id
+                            )
+                        )
+                        Log.d("MainActivity2","Deleted Schedule (FETCH CALL)")
+                    }
 
                     val deviceSchedule = scheduleDao.getScheduleAndDeviceByScheduleId(schedule.id)
 

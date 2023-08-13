@@ -3,9 +3,11 @@ package com.example.automatism.utils.alarm
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.util.Log
 import androidx.lifecycle.lifecycleScope
 import com.example.automatism.database.AppDatabase
+import com.example.automatism.utils.RetrofitInstance
 import com.example.automatism.utils.SMSManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -16,14 +18,16 @@ class AlarmReceiver : BroadcastReceiver() {
         Log.d("MainActivity2","Is It (Context) Null Lol? => ${(context == null).toString()}")
         context ?: return
 
+        val myPreferences: SharedPreferences = context.getSharedPreferences("MyPreferences", Context.MODE_PRIVATE)
+
         val scope = if (context is androidx.lifecycle.LifecycleOwner) {
             context.lifecycleScope
         } else {
             kotlinx.coroutines.CoroutineScope(Dispatchers.IO)
         }
-
         val database = AppDatabase.getInstance(context)
         val deviceDao = database.deviceDao()
+        val scheduleDao = database.scheduleDao()
 
         val Scheduler = AndroidAlarmScheduler(context)
 
@@ -40,9 +44,18 @@ class AlarmReceiver : BroadcastReceiver() {
         try {
             if (action == true) {
                 scope.launch(Dispatchers.IO) {
-                    val deviceInfo = deviceDao.getDeviceById(deviceID!!)
+                    // val deviceInfo = deviceDao.getDeviceById(deviceID!!)
                     SMSManager.sendSMS(telephone!!, messageOn!!)
                     deviceDao.updateDeviceStatus(deviceID!!,true)
+                    if(myPreferences.getBoolean("USER_ACTIVE",false)){
+                        val change_status = RetrofitInstance.api.setDeviceStatus(
+                            deviceID,
+                            myPreferences.getString("jwt","")!!,
+                            mapOf(
+                                "status" to true
+                            )
+                        )
+                    }
                     Log.d(
                         "MainActivity2",
                         "${action.toString()} Alarm Triggered: $messageOn => $telephone"
@@ -50,9 +63,18 @@ class AlarmReceiver : BroadcastReceiver() {
                 }
             } else {
                 scope.launch(Dispatchers.IO) {
-                    val deviceInfo = deviceDao.getDeviceById(deviceID!!)
+                    // val deviceInfo = deviceDao.getDeviceById(deviceID!!)
                     SMSManager.sendSMS(telephone!!, messageOff!!)
                     deviceDao.updateDeviceStatus(deviceID!!,false)
+                    if(myPreferences.getBoolean("USER_ACTIVE",false)){
+                        val change_status = RetrofitInstance.api.setDeviceStatus(
+                            deviceID,
+                            myPreferences.getString("jwt","")!!,
+                            mapOf(
+                                "status" to false
+                            )
+                        )
+                    }
                     Log.d(
                         "MainActivity2",
                         "${action.toString()} Alarm Triggered: $messageOn => $telephone"
@@ -64,6 +86,18 @@ class AlarmReceiver : BroadcastReceiver() {
         }
 
         Log.i("MainActivity2","Reschudling... $telephone => action(${action})")
+        // If the frequency is null, then the alarm will not repeat.
+        scope.launch(Dispatchers.IO) {
+            if(frequency == -1) {
+                /*if(action == false) {
+                    var schedule1 = scheduleDao.getScheduleById(scheduleId!!)
+                    val modified_Device = schedule1
+                    modified_Device.activated = false
+                    scheduleDao.updateSchedule(modified_Device)
+                }*/
+                return@launch
+            }
+        }
         Scheduler.schedule(
             AlarmItem(
                 time = mapOf(

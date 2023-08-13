@@ -149,6 +149,15 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <CheckBox
+        android:id="@+id/checkboxFrequency"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="One-Time"
+        app:layout_constraintTop_toBottomOf="@id/deviceComboBox"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="16dp"/>
+
     <Button
         android:id="@+id/btnSubmit"
         android:layout_width="wrap_content"

@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import com.example.automatism.database.models.Device
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.SeekBar
 import android.widget.Toast
@@ -14,6 +15,7 @@ import com.example.automatism.database.AppDatabase
 import com.example.automatism.database.models.Schedule
 import com.example.automatism.databinding.ScheduleAddActivityBinding
 import com.example.automatism.utils.AuthHelper
+import com.example.automatism.utils.RetrofitInstance
 import com.example.automatism.utils.alarm.AlarmItem
 import com.example.automatism.utils.alarm.AndroidAlarmScheduler
 import com.google.android.material.textfield.TextInputEditText
@@ -25,12 +27,11 @@ class AddScheduleActivity : AppCompatActivity() {
 
     private lateinit var database: AppDatabase
     private lateinit var devicesList: List<Device>
-
+    private lateinit var myPreferences: SharedPreferences
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val sharedPref: SharedPreferences =
-            this.getSharedPreferences("MyPreferences", Context.MODE_PRIVATE)
+        myPreferences = this.getSharedPreferences("MyPreferences", Context.MODE_PRIVATE)
 
         // Use data binding to set up the layout
         val binding: ScheduleAddActivityBinding =
@@ -63,11 +64,19 @@ class AddScheduleActivity : AppCompatActivity() {
 
         lifecycleScope.launch(Dispatchers.IO){
             // Populate deviceComboBox with device names (replace with actual data)
-            val current_user = sharedPref.getLong("CURRENT_USER_ID", -1L)
+            val current_user = myPreferences.getLong("CURRENT_USER_ID", -1L)
             devicesList = deviceDao.getAllDevicesByUserId(current_user)
             val deviceNames = devicesList.map { it.name }
             val adapter = ArrayAdapter(this@AddScheduleActivity, android.R.layout.simple_spinner_item, deviceNames)
             binding.deviceComboBox.adapter = adapter
+        }
+
+        binding.checkboxFrequency.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                binding.frequencySlider.visibility = View.GONE
+            } else {
+                binding.frequencySlider.visibility = View.VISIBLE
+            }
         }
 
         // Implement the logic to save the schedule and handle the submit button click event here.
@@ -79,23 +88,69 @@ class AddScheduleActivity : AppCompatActivity() {
             val minuteOn = binding.editTextMinuteOn.text.toString().toInt()
             val hourOff = binding.editTextHourOff.text.toString().toInt()
             val minuteOff = binding.editTextMinuteOff.text.toString().toInt()
-            val frequency = binding.frequencySlider.progress.toInt()
-            val current_user_id = sharedPref.getLong("CURRENT_USER_ID", -1L)
+            val frequency = if (binding.checkboxFrequency.isChecked) null else binding.frequencySlider.progress.toInt()
+            val current_user_id = myPreferences.getLong("CURRENT_USER_ID", -1L)
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
                     val device = deviceDao.getDeviceById(deviceId)
+                    val test = Schedule(
+                        name = name,
+                        hour_on = hourOn,
+                        minute_on = minuteOn,
+                        hour_off = hourOff,
+                        minute_off = minuteOff,
+                        frequency = frequency,
+                        device = deviceId
+                    )
+                    Log.d("MainActivity2","${test}")
 
-                    scheduleDao.insertSchedule(
-                        Schedule(
+                    if(myPreferences.getBoolean("USER_ACTIVE",false)){
+                        val newSchedule = Schedule(
                             name = name,
                             hour_on = hourOn,
                             minute_on = minuteOn,
                             hour_off = hourOff,
                             minute_off = minuteOff,
-                            frequency = frequency,
+                            frequency = frequency ?: 0,
                             device = deviceId
                         )
-                    )
+                        var api = RetrofitInstance.api.addNewSchedule(
+                            idDevice = device.id,
+                            authToken = myPreferences.getString("jwt","")!!,
+                            requestBody = newSchedule
+                        )
+                        Log.d("MainActivity2", "api successful or not ${api.isSuccessful}, if yes ${api.code()} and if yes ${api.body()}")
+                        if(api.isSuccessful && api.code() == 200){
+                            val insertedScheduleId = api.body()?.get("insertedId")
+                            Log.d("MainActivity2","insertedId: ${insertedScheduleId}")
+                            scheduleDao.insertSchedule(
+                                Schedule(
+                                    id = (insertedScheduleId as Double).toLong(),
+                                    name = name,
+                                    hour_on = hourOn,
+                                    minute_on = minuteOn,
+                                    hour_off = hourOff,
+                                    minute_off = minuteOff,
+                                    frequency = frequency,
+                                    device = deviceId
+                                )
+                            )
+                        }
+                    } else {
+                        scheduleDao.insertSchedule(
+                            Schedule(
+                                name = name,
+                                hour_on = hourOn,
+                                minute_on = minuteOn,
+                                hour_off = hourOff,
+                                minute_off = minuteOff,
+                                frequency = frequency,
+                                device = deviceId
+                            )
+                        )
+                    }
+
+
                     Scheduler.schedule(
                         AlarmItem(
                             time = mapOf(

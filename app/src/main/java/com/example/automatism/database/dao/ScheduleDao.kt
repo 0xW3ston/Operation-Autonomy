@@ -30,7 +30,7 @@ interface ScheduleDao {
     fun getAllScheduleAndDevicesByUserId(userId: Long): List<ScheduleDevice>
 
     @Insert
-    fun insertSchedule(schedule: Schedule)
+    fun insertSchedule(schedule: Schedule): Long
 
     @Update
     fun updateSchedule(schedule: Schedule)
@@ -39,5 +39,5 @@ interface ScheduleDao {
     fun deleteSchedule(schedule: Schedule)
 
     @Upsert
-    fun upsertSchedule(schedule: Schedule)
+    fun upsertSchedule(schedule: Schedule): Long
 }

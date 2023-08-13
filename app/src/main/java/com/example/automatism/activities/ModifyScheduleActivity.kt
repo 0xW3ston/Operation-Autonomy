@@ -2,6 +2,7 @@ package com.example.automatism.activities
 
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.SeekBar
 import android.widget.Toast
@@ -66,6 +67,17 @@ class ModifyScheduleActivity : AppCompatActivity() {
                 59
             )
 
+            // Set up frequency slider visibility based on checkbox
+            binding.modifyCheckboxFrequency.setOnCheckedChangeListener { _, isChecked ->
+                if (isChecked) {
+                    binding.modifyFrequencyLabel.visibility = View.GONE
+                    binding.modifyFrequencySlider.visibility = View.GONE
+                } else {
+                    binding.modifyFrequencyLabel.visibility = View.VISIBLE
+                    binding.modifyFrequencySlider.visibility = View.VISIBLE
+                }
+            }
+
             // Set up frequency slider label
             binding.modifyFrequencySlider.setOnSeekBarChangeListener(object :
                 SeekBar.OnSeekBarChangeListener {
@@ -99,7 +111,14 @@ class ModifyScheduleActivity : AppCompatActivity() {
                 lifecycleScope.launch(Dispatchers.IO) {
                     scheduleDevice = scheduleDao.getScheduleAndDeviceByScheduleId(scheduleId)
                     val schedule = scheduleDevice.schedule
+
                     runOnUiThread {
+                        if(schedule.frequency == null) {
+                            binding.modifyCheckboxFrequency.isChecked = true
+                            binding.modifyFrequencyLabel.visibility = View.GONE
+                            binding.modifyFrequencySlider.visibility = View.GONE
+                        }
+
                         binding.modifyEditTextName.setText(schedule.name)
                         val selectedDeviceIndex =
                             devicesList.indexOfFirst { it.id == schedule.device }
@@ -110,13 +129,17 @@ class ModifyScheduleActivity : AppCompatActivity() {
                         binding.modifyEditTextMinuteOn.setText(schedule.minute_on.toString())
                         binding.modifyEditTextHourOff.setText(schedule.hour_off.toString())
                         binding.modifyEditTextMinuteOff.setText(schedule.minute_off.toString())
-                        binding.modifyFrequencySlider.progress = schedule.frequency
+                        // TODO("Fix This, The Frequency can be set to null or it can be an Int")
+                        // binding.modifyFrequencySlider.progress = schedule.frequency
                     }
                 }
             }
 
             // Implement the logic to update the schedule and handle the submit button click event here.
             binding.modifyBtnSubmit.setOnClickListener {
+                // Check the state of the checkbox
+                val isOneTime = binding.modifyCheckboxFrequency.isChecked
+
                 val schedule = scheduleDevice.schedule
                 val device = scheduleDevice.device
                 val name = binding.modifyEditTextName.text.toString()
@@ -125,7 +148,7 @@ class ModifyScheduleActivity : AppCompatActivity() {
                 val minuteOn = binding.modifyEditTextMinuteOn.text.toString().toInt()
                 val hourOff = binding.modifyEditTextHourOff.text.toString().toInt()
                 val minuteOff = binding.modifyEditTextMinuteOff.text.toString().toInt()
-                val frequency = binding.modifyFrequencySlider.progress.toInt()
+                val frequency = if (isOneTime) null else binding.modifyFrequencySlider.progress.toInt()
 
                 lifecycleScope.launch(Dispatchers.IO) {
                     try {
