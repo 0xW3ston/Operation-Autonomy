@@ -38,6 +38,9 @@ interface ScheduleDao {
     @Delete
     fun deleteSchedule(schedule: Schedule)
 
+    @Query("DELETE FROM schedules WHERE id NOT IN (:idList)")
+    suspend fun deleteSchedulesByNotInIds(idList: List<Long?>?)
+
     @Upsert
     fun upsertSchedule(schedule: Schedule): Long
 }

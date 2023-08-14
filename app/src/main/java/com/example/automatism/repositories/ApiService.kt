@@ -35,26 +35,30 @@ interface ApiService {
 
 
     // C.R.U.D. Schedules (User Active)
-    @POST("reglage/{idDevice}/ajouterReglage")
+    @POST("reglage/ajouterReglage")
     suspend fun addNewSchedule(
-        @Path("idDevice") idDevice: Long,
         @Header("Authorization") authToken: String,
         @Body requestBody: Schedule
     ): Response<Map<String, Any>>
 
-    @POST("devices/{idDevice}/deleteSchedule")
+    @GET("reglage/{reglage}/delete")
     suspend fun deleteSchedule(
-        @Path("idDevice") idDevice: Long,
-        @Header("Authorization") authToken: String,
-        @Body requestBody: Map<String, Any>
-    )
+        @Path("reglage") reglageId: Long,
+        @Header("Authorization") authToken: String
+    ): Response<Map<String,Any>>
 
-    @POST("devices/{idDevice}/modifierSchedule")
+    @POST("reglage/{reglage}/modifierReglage")
     suspend fun modifierSchedule(
-        @Path("idDevice") idDevice: Long,
+        @Path("reglage") scheduleId: Long,
         @Header("Authorization") authToken: String,
-        @Body requestBody: Map<String, Any>
-    )
+        @Body requestBody: Schedule
+    ): Response<Map<String,Any>>
+
+    @GET("reglages/{idAffecter}")
+    suspend fun getSchedulesForDeviceId(
+        @Path("idAffecter") deviceId: Long,
+        @Header("Authorization") authToken: String
+    ): Response<Map<String,List<Map<String, Any>>>>
 
     // TODO("Should I make an API Route for even Selecting all Schedules")
 }

@@ -35,7 +35,8 @@ class AndroidAlarmScheduler(
                 messageOff = item.device.msg_off,
                 action = true,
                 deviceId = item.device.id,
-                userId = item.device.user_id
+                userId = item.device.user_id,
+                scheduleId = item.schedule.id
             )
             val alarmItemOff = AlarmItem(
                 time = mapOf(
@@ -48,7 +49,8 @@ class AndroidAlarmScheduler(
                 messageOff = item.device.msg_off,
                 action = false,
                 deviceId = item.device.id,
-                userId = item.device.user_id
+                userId = item.device.user_id,
+                scheduleId = item.schedule.id
             )
             schedule(alarmItemOn,true)
             schedule(alarmItemOff,true)
@@ -71,7 +73,8 @@ class AndroidAlarmScheduler(
                 messageOff = item.device.msg_off,
                 action = true,
                 deviceId = item.device.id,
-                userId = item.device.user_id
+                userId = item.device.user_id,
+                scheduleId = item.schedule.id
             )
             val alarmItemOff = AlarmItem(
                 time = mapOf(
@@ -84,7 +87,8 @@ class AndroidAlarmScheduler(
                 messageOff = item.device.msg_off,
                 action = false,
                 deviceId = item.device.id,
-                userId = item.device.user_id
+                userId = item.device.user_id,
+                scheduleId = item.schedule.id
             )
             cancel(alarmItemOn)
             cancel(alarmItemOff)
@@ -108,7 +112,8 @@ class AndroidAlarmScheduler(
                     messageOff = item.device.msg_off,
                     action = true,
                     deviceId = item.device.id,
-                    userId = item.device.user_id
+                    userId = item.device.user_id,
+                    scheduleId = item.schedule.id
                 )
                 val alarmItemOff = AlarmItem(
                     time = mapOf(
@@ -121,7 +126,8 @@ class AndroidAlarmScheduler(
                     messageOff = item.device.msg_off,
                     action = false,
                     deviceId = item.device.id,
-                    userId = item.device.user_id
+                    userId = item.device.user_id,
+                    scheduleId = item.schedule.id
                 )
                 schedule(alarmItemOn,true)
                 schedule(alarmItemOff,true)
@@ -145,7 +151,8 @@ class AndroidAlarmScheduler(
                 messageOff = item.device.msg_off,
                 action = true,
                 deviceId = item.device.id,
-                userId = item.device.user_id
+                userId = item.device.user_id,
+                scheduleId = item.schedule.id
             )
             val alarmItemOff = AlarmItem(
                 time = mapOf(
@@ -158,7 +165,8 @@ class AndroidAlarmScheduler(
                 messageOff = item.device.msg_off,
                 action = false,
                 deviceId = item.device.id,
-                userId = item.device.user_id
+                userId = item.device.user_id,
+                scheduleId = item.schedule.id
             )
             cancel(alarmItemOn)
             cancel(alarmItemOff)
@@ -190,6 +198,7 @@ class AndroidAlarmScheduler(
             putExtra("TIME_M", item.time["minute"] as Int)
             putExtra("DEVICE_ID", item.deviceId as Long)
             putExtra("USER_ID", item.userId)
+            putExtra("SCHEDULE_ID", item.scheduleId)
         }
 
         Log.i("MainActivity2","${item.toString()}:${isInitial.toString()}")

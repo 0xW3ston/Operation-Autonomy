@@ -69,9 +69,17 @@ class SchedulesActivity : AppCompatActivity() {
         scheduleAdapter = ScheduleAdapter(this, dataList)
         binding.schedulesListview.adapter = scheduleAdapter
 
-        lifecycleScope.launch {
-            runBlocking {
-                loadSchedules()
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                if(myPreferences.getBoolean("USER_ACTIVE",false)){
+                    fetchNewSchedules()
+                }
+                    runOnUiThread {
+                        Log.e("MainActivity2","Good Initialization")
+                        scheduleAdapter.updateData()
+                    }
+            } catch (e: Exception) {
+                Log.e("MainActivity2","error in onCreate: $e")
             }
         }
     }
@@ -93,7 +101,84 @@ class SchedulesActivity : AppCompatActivity() {
         }
     } */
 
-    fun loadSchedules(){
+    private suspend fun fetchNewSchedules() {
+        try {
+            val authToken = myPreferences.getString("jwt", "")
+            val deviceId = intent.getLongExtra("device_id", -1L)
+            if (authToken.isNullOrEmpty()) {
+                return
+            }
+            var responseOfHttp = RetrofitInstance.api.getSchedulesForDeviceId(
+                deviceId = deviceId,
+                authToken = authToken
+            )
+            if (responseOfHttp.code() == 200) {
+                val schedules = responseOfHttp.body()?.get("data")
+                if(schedules != null) {
+                    Log.d("MainActivity2", "Devices are not null")
+                }
+                lifecycleScope.launch(Dispatchers.IO) {
+                    try {
+                        loadNewSchedules(schedules = schedules!!)
+                    } catch (e: Exception) {
+                        Log.e("MainActivity2","Loading Data Error: $e")
+                    }
+                }
+            } else {
+                Log.e("MainActivity2", "Status Code: ${responseOfHttp.code()}")
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity2","From Fetch New Devices: $e")
+        }
+    }
+
+    private suspend fun loadNewSchedules(schedules: List<Map<String,Any>>){
+        scheduleAdapter.updateData()
+
+        val scheduleDao = database.scheduleDao()
+
+        val current_user = myPreferences.getLong("CURRENT_USER_ID", -1L)
+
+        val listIds = schedules.map { (it["id"] as Double).toLong() }
+
+        // Step 1: Cancellation of All Alarms (of user)
+        Scheduler.deinitialize(current_user)
+
+        // Step 2: Delete non-affected Devices despite having schedules
+        scheduleDao.deleteSchedulesByNotInIds(listIds)
+
+        // Step 3: Insert/Upsert (New) Devices
+        for(schedule in schedules) {
+            // val deviceStatus: Boolean? = deviceDao.getDeviceStatusById((device["id"] as Number).toLong())
+            // val statusValue = if (deviceStatus != null) deviceStatus else false
+            try{
+                Log.i("MainActivity2","BBB:${(schedule["id"] as Number).toLong()}")
+                Log.i("MainActivity2","${schedule}")
+
+                val frequency = (if ((schedule["frequency"] as Number).toInt() == 0) null else (schedule["frequency"] as Number).toInt())
+
+                // TODO("DEVICE_ID is changed to ID (which is affecter_id")
+                val structuredDeviceMap = mapOf<String,Any?>(
+                    "id" to (schedule["id"]!! as Number).toLong(),
+                    "name" to schedule["name"]!!,
+                    "minute_on" to (schedule["minute_on"]!! as Number).toInt(),
+                    "hour_on" to (schedule["heure_on"]!! as Number).toInt(),
+                    "minute_off" to (schedule["minute_off"]!! as Number).toInt(),
+                    "hour_off" to (schedule["heure_off"]!! as Number).toInt(),
+                    "frequency" to frequency,
+                    "device" to (schedule["affecter_id"]!! as Number).toLong()
+                )
+                scheduleDao.upsertSchedule(Schedule.fromMap(structuredDeviceMap))
+            } catch (e: Exception) {
+                Log.e("MainActivity2","some error here in loading: $e")
+            }
+        }
+        // Step 4: Initialize All Alarms (from the Schedules Table)
+        // TODO("Change from Initialize ALL to Initialize By UserID")
+        Scheduler.initialize(current_user)
+        Log.i("MainActivity2","Loaded Data from Fetch SUCCESSFULLY")
+
+        // Step 5: Signal adapter to change (fetch from local DB) ListView Items
         scheduleAdapter.updateData()
     }
 
@@ -163,11 +248,8 @@ class SchedulesActivity : AppCompatActivity() {
 
                     if((context as SchedulesActivity).myPreferences.getBoolean("USER_ACTIVE",false)){
                         var api = RetrofitInstance.api.deleteSchedule(
-                            idDevice = schedule.device,
-                            authToken = (context as SchedulesActivity).myPreferences.getString("jwt","")!!,
-                            requestBody = mapOf(
-                                "id" to schedule.id
-                            )
+                            reglageId = schedule.id,
+                            authToken = (context as SchedulesActivity).myPreferences.getString("jwt","")!!
                         )
                         Log.d("MainActivity2","Deleted Schedule (FETCH CALL)")
                     }
@@ -186,7 +268,8 @@ class SchedulesActivity : AppCompatActivity() {
                             messageOff = deviceSchedule.device.msg_off,
                             action = true,
                             deviceId = deviceSchedule.device.id,
-                            userId = deviceSchedule.device.user_id
+                            userId = deviceSchedule.device.user_id,
+                            scheduleId = deviceSchedule.schedule.id
                         )
                     )
 
@@ -202,7 +285,8 @@ class SchedulesActivity : AppCompatActivity() {
                             messageOff = deviceSchedule.device.msg_off,
                             action = false,
                             deviceId = deviceSchedule.device.id,
-                            userId = deviceSchedule.device.user_id
+                            userId = deviceSchedule.device.user_id,
+                            scheduleId = deviceSchedule.schedule.id
                         )
                     )
 
@@ -210,6 +294,9 @@ class SchedulesActivity : AppCompatActivity() {
                     Log.d("MainActivity2", "Removal of 2 alarms (on/off)")
                     updateData()
                 } catch (e: Exception) {
+                    (context as AppCompatActivity).runOnUiThread {
+                        Toast.makeText(context,"Error on Delete, Cannot Access the server", Toast.LENGTH_SHORT).show()
+                    }
                     Log.e("MainActivity2", "Error deleting schedule: $e")
                 }
             }

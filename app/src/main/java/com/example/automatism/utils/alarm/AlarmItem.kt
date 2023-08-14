@@ -8,5 +8,6 @@ data class AlarmItem(
     val messageOff: String,
     val action: Boolean,
     val deviceId: Long,
-    val userId: Long
+    val userId: Long,
+    val scheduleId: Long
 )

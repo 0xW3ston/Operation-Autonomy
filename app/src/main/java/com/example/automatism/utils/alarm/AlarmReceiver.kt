@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.util.Log
+import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.automatism.database.AppDatabase
 import com.example.automatism.utils.RetrofitInstance
@@ -40,6 +41,7 @@ class AlarmReceiver : BroadcastReceiver() {
         val timeM = intent?.getIntExtra("TIME_M",-1)
         val deviceID = intent?.getLongExtra("DEVICE_ID",-1L)
         val userID = intent?.getLongExtra("USER_ID",-1L)
+        val scheduleId = intent?.getLongExtra("SCHEDULE_id", -1L)
 
         try {
             if (action == true) {
@@ -47,7 +49,7 @@ class AlarmReceiver : BroadcastReceiver() {
                     // val deviceInfo = deviceDao.getDeviceById(deviceID!!)
                     SMSManager.sendSMS(telephone!!, messageOn!!)
                     deviceDao.updateDeviceStatus(deviceID!!,true)
-                    if(myPreferences.getBoolean("USER_ACTIVE",false)){
+                    if(myPreferences.getBoolean("USER_ACTIVE",false) == true && myPreferences.getLong("CURRENT_USER_ID",-1L) == userID){
                         val change_status = RetrofitInstance.api.setDeviceStatus(
                             deviceID,
                             myPreferences.getString("jwt","")!!,
@@ -56,16 +58,16 @@ class AlarmReceiver : BroadcastReceiver() {
                             )
                         )
                     }
-                    Log.d(
-                        "MainActivity2",
-                        "${action.toString()} Alarm Triggered: $messageOn => $telephone"
-                    )
                 }
             } else {
                 scope.launch(Dispatchers.IO) {
                     // val deviceInfo = deviceDao.getDeviceById(deviceID!!)
                     SMSManager.sendSMS(telephone!!, messageOff!!)
                     deviceDao.updateDeviceStatus(deviceID!!,false)
+                    Log.d(
+                        "MainActivity2",
+                        "${action.toString()} Alarm Triggered: $messageOn => $telephone"
+                    )
                     if(myPreferences.getBoolean("USER_ACTIVE",false)){
                         val change_status = RetrofitInstance.api.setDeviceStatus(
                             deviceID,
@@ -75,10 +77,6 @@ class AlarmReceiver : BroadcastReceiver() {
                             )
                         )
                     }
-                    Log.d(
-                        "MainActivity2",
-                        "${action.toString()} Alarm Triggered: $messageOn => $telephone"
-                    )
                 }
             }
         } catch (e: Exception) {
@@ -87,17 +85,26 @@ class AlarmReceiver : BroadcastReceiver() {
 
         Log.i("MainActivity2","Reschudling... $telephone => action(${action})")
         // If the frequency is null, then the alarm will not repeat.
-        scope.launch(Dispatchers.IO) {
-            if(frequency == -1) {
-                /*if(action == false) {
+        var shouldExit = false
+
+
+        if(frequency == -1) {
+            if(action == false) {
+                scope.launch(Dispatchers.IO) {
                     var schedule1 = scheduleDao.getScheduleById(scheduleId!!)
                     val modified_Device = schedule1
                     modified_Device.activated = false
                     scheduleDao.updateSchedule(modified_Device)
-                }*/
-                return@launch
+                }
             }
+            shouldExit = true
         }
+
+
+        if(shouldExit) {
+            return
+        }
+
         Scheduler.schedule(
             AlarmItem(
                 time = mapOf(
@@ -110,7 +117,8 @@ class AlarmReceiver : BroadcastReceiver() {
                 messageOff = messageOff!!,
                 action = action!!,
                 deviceId = deviceID!!,
-                userId = userID!!
+                userId = userID!!,
+                scheduleId = scheduleId!!
             ),
             isInitial = false
         )

@@ -1,5 +1,7 @@
 package com.example.automatism.activities
 
+import android.content.Context
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -13,6 +15,7 @@ import com.example.automatism.database.models.Device
 import com.example.automatism.database.models.Schedule
 import com.example.automatism.database.models.ScheduleDevice
 import com.example.automatism.databinding.ScheduleEditActivityBinding
+import com.example.automatism.utils.RetrofitInstance
 import com.example.automatism.utils.alarm.AlarmItem
 import com.example.automatism.utils.alarm.AndroidAlarmScheduler
 import com.google.android.material.textfield.TextInputEditText
@@ -25,9 +28,12 @@ class ModifyScheduleActivity : AppCompatActivity() {
     private lateinit var database: AppDatabase
     private lateinit var devicesList: List<Device>
     private lateinit var scheduleDevice: ScheduleDevice
-
+    private lateinit var myPreferences: SharedPreferences
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        myPreferences = this.getSharedPreferences("MyPreferences", Context.MODE_PRIVATE)
+
         try {
             // Use data binding to set up the layout
             val binding: ScheduleEditActivityBinding =
@@ -106,7 +112,7 @@ class ModifyScheduleActivity : AppCompatActivity() {
                 binding.modifyDeviceComboBox.adapter = adapter
             }
 
-            val scheduleId = intent.getLongExtra("schedule_id", -1)
+            val scheduleId = intent.getLongExtra("schedule_id", -1L)
             if (scheduleId != -1L) {
                 lifecycleScope.launch(Dispatchers.IO) {
                     scheduleDevice = scheduleDao.getScheduleAndDeviceByScheduleId(scheduleId)
@@ -152,7 +158,7 @@ class ModifyScheduleActivity : AppCompatActivity() {
 
                 lifecycleScope.launch(Dispatchers.IO) {
                     try {
-                        val updatedSchedule = Schedule(
+                        var updatedSchedule = Schedule(
                             id = schedule.id,
                             name = name,
                             hour_on = hourOn,
@@ -162,8 +168,28 @@ class ModifyScheduleActivity : AppCompatActivity() {
                             frequency = frequency,
                             device = deviceId
                         )
-                        scheduleDao.updateSchedule(updatedSchedule)
-                        Log.w("MainActivity2", "After Update: ${updatedSchedule.toString()}")
+                        if(myPreferences.getBoolean("USER_ACTIVE",false)){
+                            var authToken = myPreferences.getString("jwt","")
+
+                            var forFetchModifiedSchedule = updatedSchedule
+                            forFetchModifiedSchedule.frequency = if (frequency == null) 0 else frequency
+
+                            var api = RetrofitInstance.api.modifierSchedule(
+                                scheduleId = schedule.id,
+                                authToken = authToken!!,
+                                requestBody = updatedSchedule
+                            )
+
+                            if(api.isSuccessful && api.code() == 200) {
+                                forFetchModifiedSchedule.frequency = frequency
+                                scheduleDao.updateSchedule(updatedSchedule)
+                            } else {
+                                throw Exception("Schedule Modification Failed: Server Error")
+                            }
+                        } else {
+                            scheduleDao.updateSchedule(updatedSchedule)
+                        }
+                        Log.w("MainActivity2", "After Update")
                         // Schedule Cancellation:
 
                         Scheduler.cancel(
@@ -178,7 +204,8 @@ class ModifyScheduleActivity : AppCompatActivity() {
                                 messageOff = device.msg_off,
                                 action = true,
                                 deviceId = device.id,
-                                userId = device.user_id
+                                userId = device.user_id,
+                                scheduleId = scheduleId
                             )
                         )
 
@@ -194,7 +221,8 @@ class ModifyScheduleActivity : AppCompatActivity() {
                                 messageOff = device.msg_off,
                                 action = false,
                                 deviceId = device.id,
-                                userId = device.user_id
+                                userId = device.user_id,
+                                scheduleId = scheduleId
                             )
                         )
 
@@ -212,7 +240,8 @@ class ModifyScheduleActivity : AppCompatActivity() {
                                 messageOff = device.msg_off,
                                 action = true,
                                 deviceId = deviceId,
-                                userId = device.user_id
+                                userId = device.user_id,
+                                scheduleId = scheduleId
                             ),
                             true
                         )
@@ -229,7 +258,8 @@ class ModifyScheduleActivity : AppCompatActivity() {
                                 messageOff = device.msg_off,
                                 action = false,
                                 deviceId = deviceId,
-                                userId = device.user_id
+                                userId = device.user_id,
+                                scheduleId = scheduleId
                             ),
                             true
                         )

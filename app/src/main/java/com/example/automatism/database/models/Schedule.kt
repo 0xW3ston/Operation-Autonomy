@@ -35,7 +35,7 @@ data class Schedule(
     @SerializedName("activated")
     var activated: Boolean = true
 ) {
-    fun toMap(): Map<String, Any> {
+    fun toMap(): Map<String, Any?> {
         return mapOf(
             "id" to id,
             "name" to name,
@@ -43,13 +43,13 @@ data class Schedule(
             "hour_on" to hour_on,
             "minute_off" to minute_off,
             "hour_off" to hour_off,
-            "frequency" to frequency!!,
+            "frequency" to frequency,
             "device" to device
         )
     }
 
     companion object {
-        fun fromMap(map: Map<String, Any>): Schedule {
+        fun fromMap(map: Map<String, Any?>): Schedule {
             return Schedule(
                 id = map["id"] as Long,
                 name = map["name"] as String,

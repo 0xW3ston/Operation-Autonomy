@@ -112,6 +112,13 @@ class DevicesActivity : AppCompatActivity() {
             }
         }*/
         lifecycleScope.launch(Dispatchers.IO) {
+            if(myPreferences.getBoolean("USER_ACTIVE",false)){
+                try{
+                    fetchNewSchedulesOfAllDevicesByUserId()
+                } catch (e: Exception){
+                    Log.e("MainActivity2","error in onCreate FOR USER ACTIVE: $e")
+                }
+            }
             try {
                 runOnUiThread {
                     Log.e("MainActivity2","Good Initialization")
@@ -270,40 +277,48 @@ class DevicesActivity : AppCompatActivity() {
                 status_button.isEnabled = false
 
                 try {
-                    if(my_prefs.getBoolean("USER_ACTIVE",false)){
-                        (mContext as AppCompatActivity).lifecycleScope.launch(Dispatchers.IO){
-                            var api = RetrofitInstance.api.setDeviceStatus(
-                                idDevice = mDataList[position].id,
-                                authToken = my_prefs.getString("jwt","")!!,
-                                requestBody = mapOf(
-                                    "status" to !(all_tags!!.status)
-                                )
-                            )
-                        }
-                    }
                     if(all_tags!!.status){
                         SMSManager.sendSMS(all_tags.telephone,all_tags.msg_off)
                     } else {
                         SMSManager.sendSMS(all_tags.telephone,all_tags.msg_on)
                     }
+
                     Log.d("MainActivity2","Test ${all_tags.status}")
                     (mContext as AppCompatActivity).lifecycleScope.launch(Dispatchers.IO) {
-                        Log.d("MainActivity2","Global Scope update status")
-                        deviceDao.updateDeviceStatus(all_tags.id,!(all_tags.status))
-                        // If false (it will be True) donc Green, if true (it will be False) donc Red
-
-                        delay(10000) // Delay for 10 seconds
-                        (mContext as AppCompatActivity).runOnUiThread {
-                            status_button.isEnabled = true // Re-enable the button
-                            //status_button.setBackgroundColor(if (all_tags.status) ContextCompat.getColor(mContext, R.color.green) else ContextCompat.getColor(mContext, R.color.red))
-                        }
-                        runBlocking {
-                            updateData()
+                        try{
+                            Log.d("MainActivity2","Global Scope update status")
+                            deviceDao.updateDeviceStatus(all_tags.id,!(all_tags.status))
+                            // If false (it will be True) donc Green, if true (it will be False) donc Red
+                            delay(10000) // Delay for 10 seconds
+                            (mContext as AppCompatActivity).runOnUiThread {
+                                status_button.isEnabled = true // Re-enable the button
+                                //status_button.setBackgroundColor(if (all_tags.status) ContextCompat.getColor(mContext, R.color.green) else ContextCompat.getColor(mContext, R.color.red))
+                            }
+                            runBlocking {
+                                updateData()
+                            }
+                            if(my_prefs.getBoolean("USER_ACTIVE",false)){
+                                var api = RetrofitInstance.api.setDeviceStatus(
+                                    idDevice = mDataList[position].id,
+                                    authToken = my_prefs.getString("jwt","")!!,
+                                    requestBody = mapOf(
+                                        "status" to !(all_tags!!.status)
+                                    )
+                                )
+                            }
+                        } catch(e: Exception) {
+                            Log.e("MainActivity2","error: $e")
+                            (mContext as AppCompatActivity).runOnUiThread {
+                                Toast.makeText(mContext,"Error: $e", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     }
 
                 } catch (e: Exception){
-                    Toast.makeText(mContext,"Error: $e", Toast.LENGTH_SHORT).show()
+                    Log.e("MainActivity2","error: $e")
+                    (mContext as AppCompatActivity).runOnUiThread {
+                        Toast.makeText(mContext,"Error: $e", Toast.LENGTH_SHORT).show()
+                    }
                 }
                 status_button.text = if (status_button.text == "Off") "On" else "Off"
             }
@@ -543,7 +558,7 @@ class DevicesActivity : AppCompatActivity() {
             if (authToken.isNullOrEmpty()) {
                 return
             }
-            var responseOfHttp = RetrofitInstance.api.getDevices(authToken = "Bearer $authToken")
+            var responseOfHttp = RetrofitInstance.api.getDevices(authToken = authToken)
             if (responseOfHttp.code() == 200) {
                 val devices = responseOfHttp.body()?.get("devices")
                 if(devices != null) {
@@ -581,13 +596,18 @@ class DevicesActivity : AppCompatActivity() {
         for(device in devices) {
             // val deviceStatus: Boolean? = deviceDao.getDeviceStatusById((device["id"] as Number).toLong())
             // val statusValue = if (deviceStatus != null) deviceStatus else false
+            Log.i("MainActivity2","Devices: ${device}")
             try{
                 Log.i("MainActivity2","AAA:${(device["id"] as Number).toLong()}")
                 Log.i("MainActivity2","AAA:${deviceDao.getDeviceStatusById((device["id"] as Number).toLong())}")
                 Log.i("MainActivity2","${device}")
                 val deviceStatus: Boolean? = deviceDao.getDeviceStatusById((device["id"] as Number).toLong())
 
-                val statusValue = deviceStatus ?: false
+                var statusValue = deviceStatus ?: false
+                var isConfigured = if ((device["isconfig"] as Number).toInt() == 1) true else false
+                if(myPreferences.getBoolean("USER_ACTIVE",false)) {
+                    statusValue = if ((device["statut"] as Number).toInt() == 1) true else false
+                }
 
             // TODO("DEVICE_ID is changed to ID (which is affecter_id")
             val structuredDeviceMap = mapOf<String,Any>(
@@ -599,7 +619,7 @@ class DevicesActivity : AppCompatActivity() {
                 "msg_off" to device["msg_off"]!!,
                 "user_id" to device["user_id"]!!,
                 "config" to device["config"]!!,
-                "isConfigured" to true,
+                "isConfigured" to isConfigured,
                 "status" to statusValue
             )
             deviceDao.upsert(Device.fromMap(structuredDeviceMap))
@@ -615,4 +635,86 @@ class DevicesActivity : AppCompatActivity() {
         // Step 5: Signal adapter to change (fetch from local DB) ListView Items
         deviceAdapter.updateData()
     }
+
+    suspend fun loadNewSchedules(schedules: List<Map<String,Any>>){
+
+        val scheduleDao = database.scheduleDao()
+
+        val current_user = myPreferences.getLong("CURRENT_USER_ID", -1L)
+
+        val listIds = schedules.map { (it["id"] as Double).toLong() }
+
+        // Step 1: Cancellation of All Alarms (of user)
+        Scheduler.deinitialize(current_user)
+
+        // Step 2: Delete non-affected Devices despite having schedules
+        scheduleDao.deleteSchedulesByNotInIds(listIds)
+
+        // Step 3: Insert/Upsert (New) Devices
+        for(schedule in schedules) {
+            // val deviceStatus: Boolean? = deviceDao.getDeviceStatusById((device["id"] as Number).toLong())
+            // val statusValue = if (deviceStatus != null) deviceStatus else false
+            try{
+                Log.i("MainActivity2","BBB:${(schedule["id"] as Number).toLong()}")
+                Log.i("MainActivity2","${schedule}")
+
+                val frequency = (if ((schedule["frequency"] as Number).toInt() == 0) null else (schedule["frequency"] as Number).toInt())
+
+                // TODO("DEVICE_ID is changed to ID (which is affecter_id")
+                val structuredDeviceMap = mapOf<String,Any?>(
+                    "id" to (schedule["id"]!! as Number).toLong(),
+                    "name" to schedule["name"]!!,
+                    "minute_on" to (schedule["minute_on"]!! as Number).toInt(),
+                    "hour_on" to (schedule["heure_on"]!! as Number).toInt(),
+                    "minute_off" to (schedule["minute_off"]!! as Number).toInt(),
+                    "hour_off" to (schedule["heure_off"]!! as Number).toInt(),
+                    "frequency" to frequency,
+                    "device" to (schedule["affecter_id"]!! as Number).toLong()
+                )
+                scheduleDao.upsertSchedule(Schedule.fromMap(structuredDeviceMap))
+            } catch (e: Exception) {
+                Log.e("MainActivity2","some error here in loading: $e")
+            }
+        }
+        // Step 4: Initialize All Alarms (from the Schedules Table)
+        // TODO("Change from Initialize ALL to Initialize By UserID")
+        Scheduler.initialize(current_user)
+        Log.i("MainActivity2","Loaded Data from Fetch SUCCESSFULLY")
+    }
+
+    suspend fun fetchNewSchedulesOfAllDevicesByUserId() {
+        try {
+            val authToken = myPreferences.getString("jwt", "")
+            val userId = myPreferences.getLong("CURRENT_USER_ID", -1L)
+            val deviceDao = database.deviceDao()
+            val deviceIds = deviceDao.getAllDeviceIdsByUserId(userId)
+            if (authToken.isNullOrEmpty()) {
+                return
+            }
+            for(deviceId in deviceIds){
+                var responseOfHttp = RetrofitInstance.api.getSchedulesForDeviceId(
+                    deviceId = deviceId,
+                    authToken = authToken
+                )
+                if (responseOfHttp.code() == 200) {
+                    val schedules = responseOfHttp.body()?.get("data")
+                    if(schedules != null) {
+                        Log.d("MainActivity2", "Devices are not null")
+                    }
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        try {
+                            loadNewSchedules(schedules = schedules!!)
+                        } catch (e: Exception) {
+                            Log.e("MainActivity2","Loading Data Error: $e")
+                        }
+                    }
+                } else {
+                    Log.e("MainActivity2", "Status Code: ${responseOfHttp.code()}")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity2","From Fetch New Devices: $e")
+        }
+    }
+
 }

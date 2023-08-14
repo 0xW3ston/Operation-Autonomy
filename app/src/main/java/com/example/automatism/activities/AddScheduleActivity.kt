@@ -91,6 +91,7 @@ class AddScheduleActivity : AppCompatActivity() {
             val frequency = if (binding.checkboxFrequency.isChecked) null else binding.frequencySlider.progress.toInt()
             val current_user_id = myPreferences.getLong("CURRENT_USER_ID", -1L)
             lifecycleScope.launch(Dispatchers.IO) {
+                var scheduleId = -1L
                 try {
                     val device = deviceDao.getDeviceById(deviceId)
                     val test = Schedule(
@@ -115,7 +116,6 @@ class AddScheduleActivity : AppCompatActivity() {
                             device = deviceId
                         )
                         var api = RetrofitInstance.api.addNewSchedule(
-                            idDevice = device.id,
                             authToken = myPreferences.getString("jwt","")!!,
                             requestBody = newSchedule
                         )
@@ -123,7 +123,7 @@ class AddScheduleActivity : AppCompatActivity() {
                         if(api.isSuccessful && api.code() == 200){
                             val insertedScheduleId = api.body()?.get("insertedId")
                             Log.d("MainActivity2","insertedId: ${insertedScheduleId}")
-                            scheduleDao.insertSchedule(
+                            scheduleId = scheduleDao.insertSchedule(
                                 Schedule(
                                     id = (insertedScheduleId as Double).toLong(),
                                     name = name,
@@ -135,9 +135,46 @@ class AddScheduleActivity : AppCompatActivity() {
                                     device = deviceId
                                 )
                             )
+                            Scheduler.schedule(
+                                AlarmItem(
+                                    time = mapOf(
+                                        "hour" to hourOn,
+                                        "minute" to minuteOn
+                                    ),
+                                    frequency = frequency,
+                                    telephone = device.telephone,
+                                    messageOn = device.msg_on,
+                                    messageOff = device.msg_off,
+                                    action = true,
+                                    deviceId = deviceId,
+                                    userId = current_user_id,
+                                    scheduleId = scheduleId
+                                ),
+                                isInitial = true
+                            )
+
+                            Scheduler.schedule(
+                                AlarmItem(
+                                    time = mapOf(
+                                        "hour" to hourOff,
+                                        "minute" to minuteOff
+                                    ),
+                                    frequency = frequency,
+                                    telephone = device.telephone,
+                                    messageOn = device.msg_on,
+                                    messageOff = device.msg_off,
+                                    action = false,
+                                    deviceId = deviceId,
+                                    userId = current_user_id,
+                                    scheduleId = scheduleId
+                                ),
+                                isInitial = true
+                            )
+                        } else {
+                            throw Exception("Error Of Insertion: Server-Side")
                         }
                     } else {
-                        scheduleDao.insertSchedule(
+                        scheduleId = scheduleDao.insertSchedule(
                             Schedule(
                                 name = name,
                                 hour_on = hourOn,
@@ -148,41 +185,43 @@ class AddScheduleActivity : AppCompatActivity() {
                                 device = deviceId
                             )
                         )
+
+                        Scheduler.schedule(
+                            AlarmItem(
+                                time = mapOf(
+                                    "hour" to hourOn,
+                                    "minute" to minuteOn
+                                ),
+                                frequency = frequency,
+                                telephone = device.telephone,
+                                messageOn = device.msg_on,
+                                messageOff = device.msg_off,
+                                action = true,
+                                deviceId = deviceId,
+                                userId = current_user_id,
+                                scheduleId = scheduleId
+                            ),
+                            isInitial = true
+                        )
+
+                        Scheduler.schedule(
+                            AlarmItem(
+                                time = mapOf(
+                                    "hour" to hourOff,
+                                    "minute" to minuteOff
+                                ),
+                                frequency = frequency,
+                                telephone = device.telephone,
+                                messageOn = device.msg_on,
+                                messageOff = device.msg_off,
+                                action = false,
+                                deviceId = deviceId,
+                                userId = current_user_id,
+                                scheduleId = scheduleId
+                            ),
+                            isInitial = true
+                        )
                     }
-
-
-                    Scheduler.schedule(
-                        AlarmItem(
-                            time = mapOf(
-                                "hour" to hourOn,
-                                "minute" to minuteOn
-                            ),
-                            frequency = frequency,
-                            telephone = device.telephone,
-                            messageOn = device.msg_on,
-                            messageOff = device.msg_off,
-                            action = true,
-                            deviceId = deviceId,
-                            userId = current_user_id
-                        ),
-                        isInitial = true
-                    )
-                    Scheduler.schedule(
-                        AlarmItem(
-                            time = mapOf(
-                                "hour" to hourOff,
-                                "minute" to minuteOff
-                            ),
-                            frequency = frequency,
-                            telephone = device.telephone,
-                            messageOn = device.msg_on,
-                            messageOff = device.msg_off,
-                            action = false,
-                            deviceId = deviceId,
-                            userId = current_user_id
-                        ),
-                        isInitial = true
-                    )
 
                     runOnUiThread {
                         Toast.makeText(

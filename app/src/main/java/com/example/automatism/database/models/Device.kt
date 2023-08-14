@@ -53,7 +53,7 @@ data class Device(
                 user_id = (map["user_id"] as Double).toLong(),
                 config = map["config"] as String,
                 isConfigured = map["isConfigured"] as Boolean,
-                status = (if (map["status"] == null) false else map["status"]) as Boolean
+                status = (if (map["status"] == null) false else (map["status"] as Boolean))
             )
         }
     }

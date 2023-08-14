@@ -88,8 +88,8 @@ class AuthHelper(private val context: Context) {
         val editor = sharedPref.edit()
         editor.remove(KEY_LOGIN_TIMESTAMP)
         editor.remove(KEY_AUTH_TOKEN)
-        editor.remove(CURRENT_USER_ID)
-        editor.remove(IS_ACTIVE)
+        // editor.remove(CURRENT_USER_ID)
+        // editor.remove(IS_ACTIVE)
         // editor.remove(CURRENT_USER_ID)
         editor.apply()
     }

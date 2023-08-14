@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "d3f2e004b04026b3bf606b51c4cc5dfb",
+    "identityHash": "bdef76a33f81f928764f54f5b10e4a47",
     "entities": [
       {
         "tableName": "users",
@@ -112,7 +112,7 @@
       },
       {
         "tableName": "schedules",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `minute_on` INTEGER NOT NULL, `hour_on` INTEGER NOT NULL, `minute_off` INTEGER NOT NULL, `hour_off` INTEGER NOT NULL, `frequency` INTEGER, `device` INTEGER NOT NULL, FOREIGN KEY(`device`) REFERENCES `devices`(`id`) ON UPDATE CASCADE ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `minute_on` INTEGER NOT NULL, `hour_on` INTEGER NOT NULL, `minute_off` INTEGER NOT NULL, `hour_off` INTEGER NOT NULL, `frequency` INTEGER, `device` INTEGER NOT NULL, `activated` INTEGER NOT NULL, FOREIGN KEY(`device`) REFERENCES `devices`(`id`) ON UPDATE CASCADE ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -161,6 +161,12 @@
             "columnName": "device",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "activated",
+            "columnName": "activated",
+            "affinity": "INTEGER",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -188,7 +194,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd3f2e004b04026b3bf606b51c4cc5dfb')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'bdef76a33f81f928764f54f5b10e4a47')"
     ]
   }
 }
