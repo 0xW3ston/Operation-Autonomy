@@ -20,6 +20,7 @@ class AuthHelper(private val context: Context) {
         private const val KEY_AUTH_TOKEN = "jwt"
         private const val CURRENT_USER_ID = "CURRENT_USER_ID"
         private const val IS_ACTIVE = "USER_ACTIVE"
+        private const val FETCHED_IS_ACTIVE = "FETCHED_USER_ACTIVE"
     }
 
     private val sharedPref: SharedPreferences =
@@ -61,7 +62,7 @@ class AuthHelper(private val context: Context) {
                 editor.putLong(CURRENT_USER_ID, user_id!!.toLong())
                 Log.i("MainActivity2","Login::: => ${isActive?.toInt()} :: ${isActiveBoolean}")
                 editor.putBoolean(IS_ACTIVE,isActiveBoolean)
-
+                editor.putBoolean(FETCHED_IS_ACTIVE,isActiveBoolean)
                 editor.apply()
                 return user_id!!.toLong()
             } else {

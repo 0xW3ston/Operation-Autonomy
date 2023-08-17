@@ -1,21 +1,16 @@
 package com.example.automatism.activities
 
-import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.Menu
-import android.view.MenuItem
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import com.example.automatism.R
 import com.example.automatism.utils.AuthHelper
-import com.example.automatism.utils.SMSManager
-import com.example.automatism.utils.alarm.AlarmItem
 import com.example.automatism.utils.alarm.AndroidAlarmScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -27,7 +22,8 @@ class SplashActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.splash_activity)
-        Log.d("MainActivity2","onCreate of Splash Activity")
+        try{
+        Log.d("MainActivity2", "onCreate of Splash Activity")
         // myPreferences = this.getSharedPreferences("MyPreferences", Context.MODE_PRIVATE)
 
         val Scheduler = AndroidAlarmScheduler(this)
@@ -35,29 +31,37 @@ class SplashActivity : AppCompatActivity() {
         val authHelper = AuthHelper(this)
 
         //var current_user_id = myPreferences.getLong("CURRENT_USER_ID", -1L)
-        lifecycleScope.launch(Dispatchers.IO){
-            Scheduler.deinitialize()
-            Scheduler.initialize()
+        lifecycleScope.launch(Dispatchers.IO) {
+            runBlocking{
+                Scheduler.deinitialize()
+                Scheduler.initialize()
+            }
             // To display the splash screen for a certain duration before redirecting
             Handler(Looper.getMainLooper()).postDelayed({
                 // Check if the user is logged in (you can use SharedPreferences or any other authentication mechanism)
                 // val sharedPreferences = getSharedPreferences("my_preferences", Context.MODE_PRIVATE)
                 // val isAdmin = sharedPreferences.getBoolean("admin", false)
+                try {
 
-                // Decide which activity to redirect the user to based on the login status
-                val redirectActivityClass = if (authHelper.isLoggedIn()) {
-                    DevicesActivity::class.java
-                } else {
-                    LoginActivity::class.java
+                    // Decide which activity to redirect the user to based on the login status
+                    val redirectActivityClass = if (authHelper.isLoggedIn()) {
+                        DevicesActivity::class.java
+                    } else {
+                        LoginActivity::class.java
+                    }
+
+                    // Redirect the user to the appropriate activity
+                    val intent = Intent(this@SplashActivity, redirectActivityClass)
+                    startActivity(intent)
+                    finish()
+                } catch (e: Exception) {
+                    Toast.makeText(this@SplashActivity, "I:error: $e", Toast.LENGTH_SHORT)
                 }
-
-                // Redirect the user to the appropriate activity
-                val intent = Intent(this@SplashActivity, redirectActivityClass)
-                startActivity(intent)
-                finish()
             }, splashDuration)
         }
-
+    } catch (e: Exception) {
+        Toast.makeText(this@SplashActivity, "O:error: $e", Toast.LENGTH_SHORT)
+    }
 
         /*
         Scheduler.schedule(

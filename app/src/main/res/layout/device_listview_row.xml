@@ -43,23 +43,43 @@
     <!-- Tailing Button -->
     <Button
         android:id="@+id/btnStatus"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="50dp"
+        android:layout_height="0dp"
         android:text="Off"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toEndOf="@id/guideline"
         app:layout_constraintEnd_toStartOf="@id/btnOptions"
-        app:layout_constraintBottom_toBottomOf="parent" />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintHeight_percent="1.0"/>
 
     <!-- ImageButton for Options -->
-    <ImageButton
+    <!-- <ImageButton
         android:id="@+id/btnOptions"
         android:layout_width="50dp"
         android:layout_height="wrap_content"
         android:src="@drawable/ic_menu_options"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toEndOf="@id/btnStatus"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent" />
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintBottom_toBottomOf="parent" /> -->
+    <!-- Guideline to create baseline alignment -->
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.59" />
+    <!-- ImageButton for Options -->
+    <ImageButton
+    android:id="@+id/btnOptions"
+    android:layout_width="50dp"
+    android:layout_height="0dp"
+    android:src="@drawable/ic_menu_options"
+    app:layout_constraintTop_toTopOf="parent"
+    app:layout_constraintStart_toEndOf="@id/btnStatus"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintBottom_toBottomOf="parent"
+    app:layout_constraintHeight_percent="1.0" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

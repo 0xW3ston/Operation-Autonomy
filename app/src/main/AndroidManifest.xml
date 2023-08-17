@@ -35,6 +35,10 @@
             android:exported="false"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
         <activity
+            android:name=".activities.UserSettingesActivity"
+            android:exported="false"
+            />
+        <activity
             android:name=".activities.AddScheduleActivity"
             android:exported="false"
             android:theme="@style/Theme.MaterialComponents.Light.DarkActionBar"/>

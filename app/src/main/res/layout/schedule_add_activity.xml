@@ -118,7 +118,7 @@
         </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
 
-    <TextView
+    <!-- <TextView
         android:id="@+id/frequencyLabel"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -137,7 +137,7 @@
         android:progress="24"
         app:layout_constraintTop_toBottomOf="@id/frequencyLabel"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent" /> -->
 
     <Spinner
         android:id="@+id/deviceComboBox"
@@ -145,7 +145,7 @@
         android:layout_height="40dp"
         android:hint="Select Device"
         android:layout_marginBottom="8dp"
-        app:layout_constraintTop_toBottomOf="@id/frequencySlider"
+        app:layout_constraintTop_toBottomOf="@id/offTimeLayout"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -153,7 +153,7 @@
         android:id="@+id/checkboxFrequency"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="One-Time"
+        android:text="Chaque 24h"
         app:layout_constraintTop_toBottomOf="@id/deviceComboBox"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginTop="16dp"/>

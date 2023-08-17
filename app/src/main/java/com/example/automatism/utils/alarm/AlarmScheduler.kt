@@ -6,6 +6,7 @@ interface AlarmScheduler {
     fun initialize()
     fun deinitialize()
     fun initialize(userId: Long)
-
     fun deinitialize(userId: Long)
+
+    fun runExpired()
 }

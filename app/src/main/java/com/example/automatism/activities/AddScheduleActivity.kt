@@ -16,18 +16,21 @@ import com.example.automatism.database.models.Schedule
 import com.example.automatism.databinding.ScheduleAddActivityBinding
 import com.example.automatism.utils.AuthHelper
 import com.example.automatism.utils.RetrofitInstance
+import com.example.automatism.utils.TimeCalculationClass
 import com.example.automatism.utils.alarm.AlarmItem
 import com.example.automatism.utils.alarm.AndroidAlarmScheduler
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
 class AddScheduleActivity : AppCompatActivity() {
 
     private lateinit var database: AppDatabase
     private lateinit var devicesList: List<Device>
     private lateinit var myPreferences: SharedPreferences
+    private var timecalc: TimeCalculationClass = TimeCalculationClass
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -52,7 +55,7 @@ class AddScheduleActivity : AppCompatActivity() {
         setupTimeInputValidation(binding.minuteOffInputLayout, binding.editTextMinuteOff, 0, 59)
 
         // Set up frequency slider label
-        binding.frequencySlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+        /* binding.frequencySlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 binding.frequencyLabel.text = "Frequency (in hours): $progress"
             }
@@ -60,7 +63,7 @@ class AddScheduleActivity : AppCompatActivity() {
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
 
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
+        }) */
 
         lifecycleScope.launch(Dispatchers.IO){
             // Populate deviceComboBox with device names (replace with actual data)
@@ -71,13 +74,13 @@ class AddScheduleActivity : AppCompatActivity() {
             binding.deviceComboBox.adapter = adapter
         }
 
-        binding.checkboxFrequency.setOnCheckedChangeListener { _, isChecked ->
+        /* binding.checkboxFrequency.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 binding.frequencySlider.visibility = View.GONE
             } else {
                 binding.frequencySlider.visibility = View.VISIBLE
             }
-        }
+        } */
 
         // Implement the logic to save the schedule and handle the submit button click event here.
         binding.btnSubmit.setOnClickListener {
@@ -88,7 +91,12 @@ class AddScheduleActivity : AppCompatActivity() {
             val minuteOn = binding.editTextMinuteOn.text.toString().toInt()
             val hourOff = binding.editTextHourOff.text.toString().toInt()
             val minuteOff = binding.editTextMinuteOff.text.toString().toInt()
-            val frequency = if (binding.checkboxFrequency.isChecked) null else binding.frequencySlider.progress.toInt()
+            // val frequency = if (binding.checkboxFrequency.isChecked) null else binding.frequencySlider.progress.toInt()
+            val frequency = if (binding.checkboxFrequency.isChecked) {
+                24
+            } else {
+                null
+            }
             val current_user_id = myPreferences.getLong("CURRENT_USER_ID", -1L)
             lifecycleScope.launch(Dispatchers.IO) {
                 var scheduleId = -1L
@@ -101,7 +109,8 @@ class AddScheduleActivity : AppCompatActivity() {
                         hour_off = hourOff,
                         minute_off = minuteOff,
                         frequency = frequency,
-                        device = deviceId
+                        device = deviceId,
+                        date_initial = timecalc.calculateInitialDelay(hourOn, minuteOn)
                     )
                     Log.d("MainActivity2","${test}")
 
@@ -113,7 +122,8 @@ class AddScheduleActivity : AppCompatActivity() {
                             hour_off = hourOff,
                             minute_off = minuteOff,
                             frequency = frequency ?: 0,
-                            device = deviceId
+                            device = deviceId,
+                            date_initial = timecalc.calculateInitialDelay(hourOn, minuteOn)
                         )
                         var api = RetrofitInstance.api.addNewSchedule(
                             authToken = myPreferences.getString("jwt","")!!,
@@ -132,7 +142,8 @@ class AddScheduleActivity : AppCompatActivity() {
                                     hour_off = hourOff,
                                     minute_off = minuteOff,
                                     frequency = frequency,
-                                    device = deviceId
+                                    device = deviceId,
+                                    date_initial = timecalc.calculateInitialDelay(hourOn, minuteOn)
                                 )
                             )
                             Scheduler.schedule(
@@ -182,7 +193,8 @@ class AddScheduleActivity : AppCompatActivity() {
                                 hour_off = hourOff,
                                 minute_off = minuteOff,
                                 frequency = frequency,
-                                device = deviceId
+                                device = deviceId,
+                                date_initial = timecalc.calculateInitialDelay(hourOn, minuteOn)
                             )
                         )
 
@@ -244,7 +256,6 @@ class AddScheduleActivity : AppCompatActivity() {
             }
         }
     }
-
 
     private fun addSchedule(){
         TODO("Tired as hell")

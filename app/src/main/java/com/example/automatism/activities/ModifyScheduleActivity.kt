@@ -16,6 +16,7 @@ import com.example.automatism.database.models.Schedule
 import com.example.automatism.database.models.ScheduleDevice
 import com.example.automatism.databinding.ScheduleEditActivityBinding
 import com.example.automatism.utils.RetrofitInstance
+import com.example.automatism.utils.TimeCalculationClass
 import com.example.automatism.utils.alarm.AlarmItem
 import com.example.automatism.utils.alarm.AndroidAlarmScheduler
 import com.google.android.material.textfield.TextInputEditText
@@ -29,6 +30,7 @@ class ModifyScheduleActivity : AppCompatActivity() {
     private lateinit var devicesList: List<Device>
     private lateinit var scheduleDevice: ScheduleDevice
     private lateinit var myPreferences: SharedPreferences
+    private var timecalc: TimeCalculationClass = TimeCalculationClass
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -74,7 +76,7 @@ class ModifyScheduleActivity : AppCompatActivity() {
             )
 
             // Set up frequency slider visibility based on checkbox
-            binding.modifyCheckboxFrequency.setOnCheckedChangeListener { _, isChecked ->
+            /* binding.modifyCheckboxFrequency.setOnCheckedChangeListener { _, isChecked ->
                 if (isChecked) {
                     binding.modifyFrequencyLabel.visibility = View.GONE
                     binding.modifyFrequencySlider.visibility = View.GONE
@@ -82,10 +84,10 @@ class ModifyScheduleActivity : AppCompatActivity() {
                     binding.modifyFrequencyLabel.visibility = View.VISIBLE
                     binding.modifyFrequencySlider.visibility = View.VISIBLE
                 }
-            }
+            } */
 
             // Set up frequency slider label
-            binding.modifyFrequencySlider.setOnSeekBarChangeListener(object :
+            /* binding.modifyFrequencySlider.setOnSeekBarChangeListener(object :
                 SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(
                     seekBar: SeekBar?,
@@ -98,7 +100,7 @@ class ModifyScheduleActivity : AppCompatActivity() {
                 override fun onStartTrackingTouch(seekBar: SeekBar?) {}
 
                 override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-            })
+            }) */
 
             lifecycleScope.launch(Dispatchers.IO) {
                 // Populate deviceComboBox with device names (replace with actual data)
@@ -120,9 +122,11 @@ class ModifyScheduleActivity : AppCompatActivity() {
 
                     runOnUiThread {
                         if(schedule.frequency == null) {
+                            binding.modifyCheckboxFrequency.isChecked = false
+                            // binding.modifyFrequencyLabel.visibility = View.GONE
+                            // binding.modifyFrequencySlider.visibility = View.GONE
+                        } else if(schedule.frequency == 24) {
                             binding.modifyCheckboxFrequency.isChecked = true
-                            binding.modifyFrequencyLabel.visibility = View.GONE
-                            binding.modifyFrequencySlider.visibility = View.GONE
                         }
 
                         binding.modifyEditTextName.setText(schedule.name)
@@ -144,7 +148,7 @@ class ModifyScheduleActivity : AppCompatActivity() {
             // Implement the logic to update the schedule and handle the submit button click event here.
             binding.modifyBtnSubmit.setOnClickListener {
                 // Check the state of the checkbox
-                val isOneTime = binding.modifyCheckboxFrequency.isChecked
+                val isPeriodic = binding.modifyCheckboxFrequency.isChecked
 
                 val schedule = scheduleDevice.schedule
                 val device = scheduleDevice.device
@@ -154,7 +158,7 @@ class ModifyScheduleActivity : AppCompatActivity() {
                 val minuteOn = binding.modifyEditTextMinuteOn.text.toString().toInt()
                 val hourOff = binding.modifyEditTextHourOff.text.toString().toInt()
                 val minuteOff = binding.modifyEditTextMinuteOff.text.toString().toInt()
-                val frequency = if (isOneTime) null else binding.modifyFrequencySlider.progress.toInt()
+                val frequency = if (isPeriodic) 24 else null
 
                 lifecycleScope.launch(Dispatchers.IO) {
                     try {
@@ -166,7 +170,8 @@ class ModifyScheduleActivity : AppCompatActivity() {
                             hour_off = hourOff,
                             minute_off = minuteOff,
                             frequency = frequency,
-                            device = deviceId
+                            device = deviceId,
+                            date_initial = timecalc.calculateInitialDelay(hourOn, minuteOn)
                         )
                         if(myPreferences.getBoolean("USER_ACTIVE",false)){
                             var authToken = myPreferences.getString("jwt","")

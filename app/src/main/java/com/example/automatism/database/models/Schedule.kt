@@ -30,6 +30,12 @@ data class Schedule(
     var hour_off: Int,
     @SerializedName("frequency")
     var frequency: Int?,
+    @SerializedName("dateInitial")
+    var date_initial: Long? = null,
+    @SerializedName("statusOn")
+    var status_on: Boolean = false,
+    @SerializedName("statusOff")
+    var status_off: Boolean = false,
     @SerializedName("device")
     var device: Long,
     @SerializedName("activated")

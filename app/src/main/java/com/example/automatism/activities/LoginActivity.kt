@@ -1,6 +1,5 @@
 package com.example.automatism.activities
 
-import android.content.Context
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -13,11 +12,7 @@ import com.example.automatism.database.models.User
 import com.example.automatism.databinding.LoginActivityBinding
 import com.example.automatism.utils.AuthHelper
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 class LoginActivity : AppCompatActivity() {
     private lateinit var binding: LoginActivityBinding
@@ -70,6 +65,10 @@ class LoginActivity : AppCompatActivity() {
                 }
             }
         } catch (e: Exception) {
+            runOnUiThread {
+                Toast.makeText(this@LoginActivity, "Error L: $e", Toast.LENGTH_SHORT)
+                    .show()
+            }
             Log.e("MainActivity2", "Error onCreate Login: $e")
         }
 

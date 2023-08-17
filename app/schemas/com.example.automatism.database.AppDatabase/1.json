@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "bdef76a33f81f928764f54f5b10e4a47",
+    "identityHash": "7aa51a487efc752ae58259f3593f6c74",
     "entities": [
       {
         "tableName": "users",
@@ -112,7 +112,7 @@
       },
       {
         "tableName": "schedules",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `minute_on` INTEGER NOT NULL, `hour_on` INTEGER NOT NULL, `minute_off` INTEGER NOT NULL, `hour_off` INTEGER NOT NULL, `frequency` INTEGER, `device` INTEGER NOT NULL, `activated` INTEGER NOT NULL, FOREIGN KEY(`device`) REFERENCES `devices`(`id`) ON UPDATE CASCADE ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `minute_on` INTEGER NOT NULL, `hour_on` INTEGER NOT NULL, `minute_off` INTEGER NOT NULL, `hour_off` INTEGER NOT NULL, `frequency` INTEGER, `date_initial` INTEGER, `status_on` INTEGER NOT NULL, `status_off` INTEGER NOT NULL, `device` INTEGER NOT NULL, `activated` INTEGER NOT NULL, FOREIGN KEY(`device`) REFERENCES `devices`(`id`) ON UPDATE CASCADE ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -157,6 +157,24 @@
             "notNull": false
           },
           {
+            "fieldPath": "date_initial",
+            "columnName": "date_initial",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "status_on",
+            "columnName": "status_on",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status_off",
+            "columnName": "status_off",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
             "fieldPath": "device",
             "columnName": "device",
             "affinity": "INTEGER",
@@ -194,7 +212,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'bdef76a33f81f928764f54f5b10e4a47')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7aa51a487efc752ae58259f3593f6c74')"
     ]
   }
 }

@@ -41,13 +41,16 @@ class AlarmReceiver : BroadcastReceiver() {
         val timeM = intent?.getIntExtra("TIME_M",-1)
         val deviceID = intent?.getLongExtra("DEVICE_ID",-1L)
         val userID = intent?.getLongExtra("USER_ID",-1L)
-        val scheduleId = intent?.getLongExtra("SCHEDULE_id", -1L)
+        val scheduleId = intent?.getLongExtra("SCHEDULE_ID", -1L)
+        val isMissed = intent?.getBooleanExtra("IS_MISSED", false)
 
         try {
+            Log.d("MainActivity2","$scheduleId")
             if (action == true) {
                 scope.launch(Dispatchers.IO) {
                     // val deviceInfo = deviceDao.getDeviceById(deviceID!!)
                     SMSManager.sendSMS(telephone!!, messageOn!!)
+                    scheduleDao.updateScheduleStatuses(scheduleId!!, statusOn = true, statusOff = false)
                     deviceDao.updateDeviceStatus(deviceID!!,true)
                     if(myPreferences.getBoolean("USER_ACTIVE",false) == true && myPreferences.getLong("CURRENT_USER_ID",-1L) == userID){
                         val change_status = RetrofitInstance.api.setDeviceStatus(
@@ -63,12 +66,13 @@ class AlarmReceiver : BroadcastReceiver() {
                 scope.launch(Dispatchers.IO) {
                     // val deviceInfo = deviceDao.getDeviceById(deviceID!!)
                     SMSManager.sendSMS(telephone!!, messageOff!!)
+                    scheduleDao.updateScheduleStatuses(scheduleId!!, statusOn = false, statusOff = false)
                     deviceDao.updateDeviceStatus(deviceID!!,false)
                     Log.d(
                         "MainActivity2",
                         "${action.toString()} Alarm Triggered: $messageOn => $telephone"
                     )
-                    if(myPreferences.getBoolean("USER_ACTIVE",false)){
+                    if(myPreferences.getBoolean("USER_ACTIVE",false) == true && myPreferences.getLong("CURRENT_USER_ID",-1L) == userID){
                         val change_status = RetrofitInstance.api.setDeviceStatus(
                             deviceID,
                             myPreferences.getString("jwt","")!!,
@@ -87,6 +91,22 @@ class AlarmReceiver : BroadcastReceiver() {
         // If the frequency is null, then the alarm will not repeat.
         var shouldExit = false
 
+        if(isMissed!!) {
+            scope.launch(Dispatchers.IO) {
+                if(action == false ){
+                    scheduleDao.updateScheduleStatuses(scheduleId!!, statusOn = false, statusOff = false)
+                    if(frequency == -1) {
+                        var schedule1 = scheduleDao.getScheduleById(scheduleId!!)
+                        val modified_Device = schedule1
+                        modified_Device.activated = false
+                        scheduleDao.updateSchedule(modified_Device)
+                    }
+                } else {
+                    scheduleDao.updateScheduleStatuses(scheduleId!!, statusOn = true, statusOff = false)
+                }
+            }
+            return
+        }
 
         if(frequency == -1) {
             if(action == false) {
@@ -94,6 +114,7 @@ class AlarmReceiver : BroadcastReceiver() {
                     var schedule1 = scheduleDao.getScheduleById(scheduleId!!)
                     val modified_Device = schedule1
                     modified_Device.activated = false
+                    Log.d("MainActivity2","Updating One-Time Row")
                     scheduleDao.updateSchedule(modified_Device)
                 }
             }

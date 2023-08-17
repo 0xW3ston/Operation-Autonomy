@@ -112,6 +112,11 @@ class DevicesActivity : AppCompatActivity() {
             }
         }*/
         lifecycleScope.launch(Dispatchers.IO) {
+            try{
+                fetchNewDevices()
+            } catch (e: Exception) {
+                Log.e("MainActivity2","error in Fetching devices (onCreate)")
+            }
             if(myPreferences.getBoolean("USER_ACTIVE",false)){
                 try{
                     fetchNewSchedulesOfAllDevicesByUserId()
@@ -124,7 +129,6 @@ class DevicesActivity : AppCompatActivity() {
                     Log.e("MainActivity2","Good Initialization")
                     deviceAdapter.updateData()
                 }
-                fetchNewDevices()
             } catch (e: Exception) {
                 Log.e("MainActivity2","error in onCreate: $e")
             }
@@ -151,6 +155,16 @@ class DevicesActivity : AppCompatActivity() {
                     }
                 } catch (e: Exception) {
                     Log.e("MainActivity2","$e")
+                }
+            }
+            R.id.oSettings -> {
+                try {
+                    Intent(this, UserSettingesActivity::class.java).also {
+                        startActivity(it)
+                        return true
+                    }
+                } catch (e: Exception) {
+                    Log.e("MainActivity2", "Exception: $e")
                 }
             }
             R.id.oQuit -> {
