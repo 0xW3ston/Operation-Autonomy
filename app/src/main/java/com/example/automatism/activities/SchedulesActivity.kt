@@ -156,6 +156,8 @@ class SchedulesActivity : AppCompatActivity() {
                 Log.i("MainActivity2","${schedule}")
 
                 val frequency = (if ((schedule["frequency"] as Number).toInt() == 0) null else (schedule["frequency"] as Number).toInt())
+                val isActivatedRaw = scheduleDao.getIsActivatedStatusById((schedule["id"]!! as Number).toLong())
+                val isActivated = (if (isActivatedRaw != null) isActivatedRaw else true)
 
                 // TODO("DEVICE_ID is changed to ID (which is affecter_id")
                 val structuredDeviceMap = mapOf<String,Any?>(
@@ -166,7 +168,8 @@ class SchedulesActivity : AppCompatActivity() {
                     "minute_off" to (schedule["minute_off"]!! as Number).toInt(),
                     "hour_off" to (schedule["heure_off"]!! as Number).toInt(),
                     "frequency" to frequency,
-                    "device" to (schedule["affecter_id"]!! as Number).toLong()
+                    "device" to (schedule["affecter_id"]!! as Number).toLong(),
+                    "activated" to isActivated
                 )
                 scheduleDao.upsertSchedule(Schedule.fromMap(structuredDeviceMap))
             } catch (e: Exception) {

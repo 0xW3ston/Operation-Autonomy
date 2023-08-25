@@ -64,7 +64,8 @@ data class Schedule(
                 minute_off = map["minute_off"] as Int,
                 hour_off = map["hour_off"] as Int,
                 frequency = map["frequency"] as Int?,
-                device = map["device"] as Long
+                device = map["device"] as Long,
+                activated = map["activated"] as Boolean
             )
         }
     }

@@ -26,6 +26,9 @@ interface ScheduleDao {
     @Query("SELECT * FROM schedules")
     suspend fun getAllScheduleAndDevices(): List<ScheduleDevice>
 
+    @Query("SELECT activated FROM schedules WHERE id = :scheduleId LIMIT 1")
+    suspend fun getIsActivatedStatusById(scheduleId: Long): Boolean?
+
     @Query("SELECT * FROM schedules WHERE device IN (SELECT id FROM devices WHERE user_id = :userId)")
     suspend fun getAllScheduleAndDevicesByUserId(userId: Long): List<ScheduleDevice>
 

@@ -209,16 +209,27 @@ class DevicesActivity : AppCompatActivity() {
             val layoutInflater = LayoutInflater.from(mContext)
             val rowMain = layoutInflater.inflate(R.layout.device_listview_row, viewGroup, false)
 
+            val status_indicator = rowMain.findViewById<TextView>(R.id.circularStatusIndicator)
             val device_model = rowMain.findViewById<TextView>(R.id.textTitle)
             val device_description = rowMain.findViewById<TextView>(R.id.textSubtitle)
-            val status_button = rowMain.findViewById<Button>(R.id.btnStatus)
+            val status_button_on = rowMain.findViewById<Button>(R.id.btnStatusOn)
+            val status_button_off = rowMain.findViewById<Button>(R.id.btnStatusOff)
             val overflowButton = rowMain.findViewById<ImageButton>(R.id.btnOptions)
             var my_prefs = (mContext as DevicesActivity).myPreferences
 
+            status_indicator.text = if (mDataList[position].status) "On" else "Off"
+            if (mDataList[position].status) {
+                status_indicator.setBackgroundResource(R.drawable.circular_background_green)
+                status_button_on.isEnabled = false
+                status_button_off.isEnabled = true
+            } else {
+                status_indicator.setBackgroundResource(R.drawable.circular_background_red)
+                status_button_on.isEnabled = true
+                status_button_off.isEnabled = false
+            }
+
             device_model.text = mDataList[position].name
             device_description.text = mDataList[position].description
-            status_button.text = if (mDataList[position].status) "On" else "Off"
-            status_button.setBackgroundColor(if (mDataList[position].status) ContextCompat.getColor(mContext, R.color.green) else ContextCompat.getColor(mContext, R.color.red))
             overflowButton.setBackgroundColor(ContextCompat.getColor(mContext, R.color.gray))
             // status_button.isChecked = mDataList[position].status
             // status_button.setBackgroundResource(if (mDataList[position].status) R.color.green else R.color.red)
@@ -230,8 +241,84 @@ class DevicesActivity : AppCompatActivity() {
             // )
 
 
+            status_button_on.tag = mDataList[position]
+            status_button_off.tag = mDataList[position]
             overflowButton.tag = mDataList[position]
-            status_button.tag = mDataList[position]
+
+            // Set a single listener for both "On" and "Off" buttons
+            val statusButtonListener = View.OnClickListener {
+                val statusBtn = (it as Button)
+                val all_tags = statusBtn.tag as? Device
+                val device_id = all_tags?.id
+                val buttonText = statusBtn.text.toString()
+
+                Log.d("MainActivity2","the id is $device_id : ${all_tags?.status}")
+
+                status_button_on.isEnabled = false
+                status_button_off.isEnabled = false
+
+                try {
+                if (buttonText == "On") {
+                    SMSManager.sendSMS(all_tags!!.telephone ,all_tags!!.msg_on)
+                } else if (buttonText == "Off") {
+                    SMSManager.sendSMS(all_tags!!.telephone ,all_tags!!.msg_off)
+                }
+                Log.d("MainActivity2","Test ${all_tags!!.status}")
+                    (mContext as AppCompatActivity).lifecycleScope.launch(Dispatchers.IO) {
+                    try{
+                        Log.d("MainActivity2","Global Scope update status")
+                        deviceDao.updateDeviceStatus(all_tags.id,!(all_tags.status))
+                        // If false (it will be True) donc Green, if true (it will be False) donc Red
+
+                        status_indicator.setBackgroundResource(R.drawable.circular_background_orange)
+                        status_indicator.text = "..."
+
+                        delay(10000) // Delay for 10 seconds
+                        (mContext as AppCompatActivity).runOnUiThread {
+                            status_button_on.isEnabled = all_tags.status
+                            status_button_off.isEnabled = !(all_tags.status)
+                            status_indicator.setBackgroundResource(
+                                if (all_tags.status)
+                                    R.drawable.circular_background_red
+                                else
+                                    R.drawable.circular_background_green
+                            )
+                            status_indicator.text = (if (all_tags.status)
+                                                        "Off"
+                                                    else
+                                                        "On")
+                            //status_button.setBackgroundColor(if (all_tags.status) ContextCompat.getColor(mContext, R.color.green) else ContextCompat.getColor(mContext, R.color.red))
+                        }
+                        runBlocking {
+                            updateData()
+                        }
+                        if(my_prefs.getBoolean("USER_ACTIVE",false)){
+                            var api = RetrofitInstance.api.setDeviceStatus(
+                                idDevice = mDataList[position].id,
+                                authToken = my_prefs.getString("jwt","")!!,
+                                requestBody = mapOf(
+                                    "status" to !(all_tags!!.status)
+                                )
+                            )
+                        }
+                    } catch(e: Exception) {
+                        Log.e("MainActivity2","error: $e")
+                        (mContext as AppCompatActivity).runOnUiThread {
+                            Toast.makeText(mContext,"Error: $e", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+                } catch (e: Exception){
+                    Log.e("MainActivity2","error: $e")
+                    (mContext as AppCompatActivity).runOnUiThread {
+                        Toast.makeText(mContext,"Error: $e", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+
+
+            status_button_on.setOnClickListener(statusButtonListener)
+            status_button_off.setOnClickListener(statusButtonListener)
 
             /* status_button.setOnCheckedChangeListener { _, isChecked ->
                 val all_tags = status_button.tag as? Device
@@ -274,7 +361,8 @@ class DevicesActivity : AppCompatActivity() {
                 status_button.text = if (status_button.isChecked) "On" else "Off"
             } */
 
-            status_button.setOnClickListener {
+            // TODO("REMOVED THIS / OR RATHER DESACTIVATED")
+            /* status_button.setOnClickListener {
                 val all_tags = status_button.tag as? Device
                 val device_id = all_tags?.id
                 Log.d("MainActivity2","the id is $device_id : ${all_tags?.status}")
@@ -335,7 +423,7 @@ class DevicesActivity : AppCompatActivity() {
                     }
                 }
                 status_button.text = if (status_button.text == "Off") "On" else "Off"
-            }
+            } */
 
             overflowButton.setOnClickListener {
                 showOverflowMenu(it, position)
@@ -399,6 +487,14 @@ class DevicesActivity : AppCompatActivity() {
                                 )
                             )
                             deviceDao.update(A_Device)
+                            val user_id = (mContext as DevicesActivity).myPreferences.getLong("CURRENT_USER_ID", -1L)
+                            if(user_id == -1L) {
+                                throw Exception("Error, No User_ID")
+                            }
+                            runBlocking {
+                                (mContext as DevicesActivity).Scheduler.deinitialize(userId = user_id)
+                                (mContext as DevicesActivity).Scheduler.initialize(userId = user_id)
+                            }
                             (mContext as AppCompatActivity).runOnUiThread {
                                 Toast.makeText(
                                     mContext,
@@ -673,7 +769,9 @@ class DevicesActivity : AppCompatActivity() {
                 Log.i("MainActivity2","${schedule}")
 
                 val frequency = (if ((schedule["frequency"] as Number).toInt() == 0) null else (schedule["frequency"] as Number).toInt())
-
+                val isActivatedRaw = scheduleDao.getIsActivatedStatusById((schedule["id"]!! as Number).toLong())
+                val isActivated = (if (isActivatedRaw != null) isActivatedRaw else true)
+                Log.d("MainActivity2","isActivated: ${isActivatedRaw}, Real isActivated: ${isActivated}")
                 // TODO("DEVICE_ID is changed to ID (which is affecter_id")
                 val structuredDeviceMap = mapOf<String,Any?>(
                     "id" to (schedule["id"]!! as Number).toLong(),
@@ -683,7 +781,8 @@ class DevicesActivity : AppCompatActivity() {
                     "minute_off" to (schedule["minute_off"]!! as Number).toInt(),
                     "hour_off" to (schedule["heure_off"]!! as Number).toInt(),
                     "frequency" to frequency,
-                    "device" to (schedule["affecter_id"]!! as Number).toLong()
+                    "device" to (schedule["affecter_id"]!! as Number).toLong(),
+                    "activated" to isActivated
                 )
                 scheduleDao.upsertSchedule(Schedule.fromMap(structuredDeviceMap))
             } catch (e: Exception) {

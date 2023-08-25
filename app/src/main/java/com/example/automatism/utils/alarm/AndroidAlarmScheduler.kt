@@ -37,36 +37,38 @@ class AndroidAlarmScheduler(
                 val scheduleDao = database.scheduleDao()
                 val schedulesDevices = scheduleDao.getAllScheduleAndDevices()
                 for (item in schedulesDevices) {
-                    val alarmItemOn = AlarmItem(
-                        time = mapOf(
-                            "hour" to item.schedule.hour_on,
-                            "minute" to item.schedule.minute_on
-                        ),
-                        frequency = item.schedule.frequency,
-                        telephone = item.device.telephone,
-                        messageOn = item.device.msg_on,
-                        messageOff = item.device.msg_off,
-                        action = true,
-                        deviceId = item.device.id,
-                        userId = item.device.user_id,
-                        scheduleId = item.schedule.id
-                    )
-                    val alarmItemOff = AlarmItem(
-                        time = mapOf(
-                            "hour" to item.schedule.hour_off,
-                            "minute" to item.schedule.minute_off
-                        ),
-                        frequency = item.schedule.frequency,
-                        telephone = item.device.telephone,
-                        messageOn = item.device.msg_on,
-                        messageOff = item.device.msg_off,
-                        action = false,
-                        deviceId = item.device.id,
-                        userId = item.device.user_id,
-                        scheduleId = item.schedule.id
-                    )
-                    schedule(alarmItemOn, true)
-                    schedule(alarmItemOff, true)
+                    if (item.schedule.activated) {
+                        val alarmItemOn = AlarmItem(
+                            time = mapOf(
+                                "hour" to item.schedule.hour_on,
+                                "minute" to item.schedule.minute_on
+                            ),
+                            frequency = item.schedule.frequency,
+                            telephone = item.device.telephone,
+                            messageOn = item.device.msg_on,
+                            messageOff = item.device.msg_off,
+                            action = true,
+                            deviceId = item.device.id,
+                            userId = item.device.user_id,
+                            scheduleId = item.schedule.id
+                        )
+                        val alarmItemOff = AlarmItem(
+                            time = mapOf(
+                                "hour" to item.schedule.hour_off,
+                                "minute" to item.schedule.minute_off
+                            ),
+                            frequency = item.schedule.frequency,
+                            telephone = item.device.telephone,
+                            messageOn = item.device.msg_on,
+                            messageOff = item.device.msg_off,
+                            action = false,
+                            deviceId = item.device.id,
+                            userId = item.device.user_id,
+                            scheduleId = item.schedule.id
+                        )
+                        schedule(alarmItemOn, true)
+                        schedule(alarmItemOff, true)
+                    }
                 }
                 Log.w("MainActivity2","Initialize")
             }
