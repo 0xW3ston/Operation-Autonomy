@@ -11,6 +11,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.automatism.database.models.Device
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 
 object SMSManager {
 
@@ -45,18 +46,31 @@ object SMSManager {
     }
 
      suspend fun sendConfigSMS(device: Device) {
-        val config = device.config
-        val smsData = config.split("/")
-        for (smsInfo in smsData) {
-            val (message, delayInSeconds) = smsInfo.split(":")
-            try {
-                sendSMS(device.telephone, message)
-                Log.i("MainActivity2","[CONFIG MESSAGE]: \"${message}\", [SENT AT]: ${System.currentTimeMillis() / 1000} ")
-                val delayInMillis = delayInSeconds.toLong() * 1000
-                delay(delayInMillis) // Delay for the specified time
-            } catch (e: Exception) {
-                Log.e("DevicesActivity", "Error sending SMS: $e")
-            }
+         val config = device.config
+         val smsData = config.split("/" )
+         val SmsMessagesLength = smsData.size
+         var i = 0
+         runBlocking {
+             for (smsInfo in smsData) {
+
+                    val (message, delayInSeconds) = smsInfo.split(":")
+                    try {
+                        sendSMS(device.telephone, message)
+                        Log.i(
+                            "MainActivity2",
+                            "[CONFIG MESSAGE]: \"${message}\", [SENT AT]: ${System.currentTimeMillis() / 1000} "
+                        )
+                        if(i == (SmsMessagesLength - 1)) {
+                            return@runBlocking
+                        }
+                        val delayInMillis = delayInSeconds.toLong() * 1000
+                        delay(delayInMillis) // Delay for the specified time
+                        i++
+                    } catch (e: Exception) {
+                        Log.e("DevicesActivity", "Error sending SMS: $e")
+                        throw Exception("Error: $e")
+                    }
+             }
         }
     }
 

@@ -76,16 +76,15 @@ class AuthHelper(private val context: Context) {
     }
 
     fun logout() {
-        /*var Scheduler = AndroidAlarmScheduler(context)
+        var Scheduler = AndroidAlarmScheduler(context)
         val scope = if (context is androidx.lifecycle.LifecycleOwner) {
             context.lifecycleScope
         } else {
             kotlinx.coroutines.CoroutineScope(Dispatchers.IO)
         }
         scope.launch(Dispatchers.IO) {
-            //Scheduler.deinitialize()
-
-        }*/
+            Scheduler.deinitialize(userId = sharedPref.getLong("CURRENT_USER_ID", -1L))
+        }
         val editor = sharedPref.edit()
         editor.remove(KEY_LOGIN_TIMESTAMP)
         editor.remove(KEY_AUTH_TOKEN)

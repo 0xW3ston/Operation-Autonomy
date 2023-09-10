@@ -230,7 +230,7 @@ class DevicesActivity : AppCompatActivity() {
 
             device_model.text = mDataList[position].name
             device_description.text = mDataList[position].description
-            overflowButton.setBackgroundColor(ContextCompat.getColor(mContext, R.color.gray))
+            // overflowButton.setBackgroundColor(ContextCompat.getColor(mContext, R.color.gray))
             // status_button.isChecked = mDataList[position].status
             // status_button.setBackgroundResource(if (mDataList[position].status) R.color.green else R.color.red)
             // status_button.setTextColor(
@@ -486,15 +486,18 @@ class DevicesActivity : AppCompatActivity() {
                                     "telephone" to A_Device.telephone
                                 )
                             )
-                            deviceDao.update(A_Device)
+
                             val user_id = (mContext as DevicesActivity).myPreferences.getLong("CURRENT_USER_ID", -1L)
-                            if(user_id == -1L) {
-                                throw Exception("Error, No User_ID")
+                            if(user_id == -1L || api.code() != 200) {
+                                throw Exception("Error, No User_ID Or Refused")
                             }
+
                             runBlocking {
                                 (mContext as DevicesActivity).Scheduler.deinitialize(userId = user_id)
+                                deviceDao.update(A_Device)
                                 (mContext as DevicesActivity).Scheduler.initialize(userId = user_id)
                             }
+
                             (mContext as AppCompatActivity).runOnUiThread {
                                 Toast.makeText(
                                     mContext,
@@ -566,36 +569,67 @@ class DevicesActivity : AppCompatActivity() {
 
             btnConfirm.setOnClickListener {
 
+                // Disable both buttons
+                btnConfirm.isEnabled = false
+                btnCancel.isEnabled = false
+
                 val authToken = (mContext as DevicesActivity).myPreferences.getString("jwt", "")
                 (mContext as AppCompatActivity).lifecycleScope.launch(Dispatchers.IO) {
                     try {
                         SMSManager.sendConfigSMS(device)
-                        var api = RetrofitInstance.api.setConfigStatus(
-                            idDevice = device.id,
-                            authToken = authToken!!,
-                            requestBody = mapOf(
-                                "isConfigured" to true
-                            )
-                        )
                         var updated_device = deviceDao.getDeviceById(device.id)
                         updated_device.isConfigured = true
                         deviceDao.update(updated_device)
 
-                        // Update UI on the main thread
+                        try {
+                            var api = RetrofitInstance.api.setConfigStatus(
+                                idDevice = device.id,
+                                authToken = authToken!!,
+                                requestBody = mapOf(
+                                    "isConfigured" to true
+                                )
+                            )
+                        } catch (e: Exception) {
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(
+                                    mContext,
+                                    "Configured Successfully (Local), No successful connection to the backend",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                alertDialogConfirm.dismiss() // Close the dialog
+                            }
+                            return@launch
+                        }
                         withContext(Dispatchers.Main) {
                             Toast.makeText(
                                 mContext,
-                                "Device Configured Successfully",
+                                "Configured Successfully (Local + Online)",
                                 Toast.LENGTH_SHORT
                             ).show()
                             alertDialogConfirm.dismiss() // Close the dialog
                         }
                     } catch (e: Exception) {
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(
+                                mContext,
+                                "Configuration Error: $e",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            alertDialogConfirm.dismiss() // Close the dialog
+                        }
                         Log.e("MainActivity2", "Configuring Error: $e")
+                    } finally {
+                        // renable both buttons after it's complete (error or good)
+                        withContext(Dispatchers.Main) {
+                            btnConfirm.isEnabled = true
+                            btnCancel.isEnabled = true
+                        }
+                        (mContext as DevicesActivity).deviceAdapter.updateData()
                     }
                 }
             }
 
+            alertDialogConfirm.setCancelable(false)
             alertDialogConfirm.show()
         }
 
@@ -770,7 +804,10 @@ class DevicesActivity : AppCompatActivity() {
 
                 val frequency = (if ((schedule["frequency"] as Number).toInt() == 0) null else (schedule["frequency"] as Number).toInt())
                 val isActivatedRaw = scheduleDao.getIsActivatedStatusById((schedule["id"]!! as Number).toLong())
-                val isActivated = (if (isActivatedRaw != null) isActivatedRaw else true)
+                val isActivatedLocal = (if (isActivatedRaw != null) isActivatedRaw else true)
+                val isActivatedOnline = schedule["isActivated"] as Boolean
+                val isActivated = (if (isActivatedLocal == false || isActivatedOnline == false) false else true)
+
                 Log.d("MainActivity2","isActivated: ${isActivatedRaw}, Real isActivated: ${isActivated}")
                 // TODO("DEVICE_ID is changed to ID (which is affecter_id")
                 val structuredDeviceMap = mapOf<String,Any?>(

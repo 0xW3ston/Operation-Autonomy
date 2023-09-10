@@ -7,54 +7,30 @@
     android:layout_height="wrap_content"
     android:padding="4dp">
 
-    <!-- <View
-        android:id="@+id/circularStatusIndicator"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginEnd="16dp"
-        android:background="@drawable/circular_background_red"
-        app:layout_constraintTop_toTopOf="@id/textTitle"
-        app:layout_constraintBottom_toBottomOf="parent" /> -->
-
-    <!-- Title -->
-    <TextView
-        android:id="@+id/circularStatusIndicator"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:background="@drawable/circular_background_red"
-        android:gravity="center"
-        android:text="Off"
-        android:textColor="#FFFFFF"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="@id/textTitle"
-        app:layout_constraintVertical_bias="0.6"
-        tools:layout_editor_absoluteX="4dp" />
-
-    <TextView
-        android:id="@+id/textTitle"
+    <!-- Circular Status Indicator Container (20% of the width) -->
+    <LinearLayout
+        android:id="@+id/circularStatusContainer"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:textSize="18sp"
-        android:text="Device X"
-        android:textStyle="bold"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/guideline"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toEndOf="@id/circularStatusIndicator"
-        app:layout_constraintEnd_toStartOf="@id/guideline"
-        app:layout_constraintBottom_toTopOf="@id/textSubtitle"
-        app:layout_constraintVertical_chainStyle="packed" />
+        app:layout_constraintBottom_toBottomOf="parent">
 
-    <!-- Subtitle -->
-    <TextView
-        android:id="@+id/textSubtitle"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="This is my best device"
-        android:textSize="16sp"
-        app:layout_constraintTop_toBottomOf="@id/textTitle"
-        app:layout_constraintStart_toEndOf="@id/circularStatusIndicator"
-        app:layout_constraintEnd_toStartOf="@id/guideline"
-        app:layout_constraintBottom_toBottomOf="parent" />
+        <!-- Circular Status Indicator -->
+        <TextView
+            android:id="@+id/circularStatusIndicator"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:background="@drawable/circular_background_red"
+            android:gravity="center"
+            android:text="Off"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:layout_gravity="center"/>
+
+    </LinearLayout>
 
     <!-- Guideline to create separation between left-side and right-side elements -->
     <androidx.constraintlayout.widget.Guideline
@@ -62,42 +38,64 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        app:layout_constraintGuide_percent="0.58" />
+        app:layout_constraintGuide_percent="0.31" />
 
-    <!-- "On" Button -->
-    <Button
-        android:id="@+id/btnStatusOn"
-        android:layout_width="50dp"
-        android:layout_height="0dp"
-        android:text="On"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toEndOf="@id/guideline"
-        app:layout_constraintEnd_toStartOf="@id/btnStatusOff"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintHeight_percent="1.0"/>
-
-    <!-- "Off" Button -->
-    <Button
-        android:id="@+id/btnStatusOff"
-        android:layout_width="50dp"
-        android:layout_height="0dp"
-        android:text="Off"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toEndOf="@id/btnStatusOn"
-        app:layout_constraintEnd_toStartOf="@id/btnOptions"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintHeight_percent="1.0"/>
-
-    <!-- ImageButton for Options -->
-    <ImageButton
-        android:id="@+id/btnOptions"
-        android:layout_width="50dp"
-        android:layout_height="0dp"
-        android:src="@drawable/ic_menu_options"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toEndOf="@id/btnStatusOff"
+    <!-- Right-side elements (Title, Subtitle, Buttons) -->
+    <LinearLayout
+        android:id="@+id/rightSideContainer"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        app:layout_constraintStart_toEndOf="@+id/guideline"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintHeight_percent="1.0" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <!-- Title -->
+        <TextView
+            android:id="@+id/textTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:text="Device X"
+            android:textStyle="bold"/>
+
+        <!-- Subtitle -->
+        <TextView
+            android:id="@+id/textSubtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="This is my best device"
+            android:textSize="16sp"/>
+
+        <!-- Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <!-- "On" Button -->
+            <Button
+                android:id="@+id/btnStatusOn"
+                android:layout_width="60dp"
+                android:layout_height="50dp"
+                android:text="On"/>
+
+            <!-- "Off" Button -->
+            <Button
+                android:id="@+id/btnStatusOff"
+                android:layout_width="60dp"
+                android:layout_height="50dp"
+                android:text="Off"/>
+
+            <!-- ImageButton for Options -->
+            <ImageButton
+                android:id="@+id/btnOptions"
+                android:layout_width="60dp"
+                android:layout_height="50dp"
+                android:src="@drawable/ic_menu_options"/>
+
+        </LinearLayout>
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

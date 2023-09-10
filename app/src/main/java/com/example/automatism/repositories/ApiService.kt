@@ -60,5 +60,12 @@ interface ApiService {
         @Header("Authorization") authToken: String
     ): Response<Map<String,List<Map<String, Any>>>>
 
+    @POST("reglage/{reglage}/modifierActivated")
+    suspend fun setIsActivated(
+        @Path("reglage") reglageId: Long,
+        @Header("Authorization") authToken: String,
+        @Body requestBody: Map<String, Boolean>
+    ): Response<Map<String,Any>>
+
     // TODO("Should I make an API Route for even Selecting all Schedules")
 }

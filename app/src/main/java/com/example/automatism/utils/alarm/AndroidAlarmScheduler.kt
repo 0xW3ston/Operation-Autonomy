@@ -33,7 +33,7 @@ class AndroidAlarmScheduler(
     override fun initialize() {
         try {
             val database = AppDatabase.getInstance(context)
-            scope.launch {
+            scope.launch(Dispatchers.IO) {
                 val scheduleDao = database.scheduleDao()
                 val schedulesDevices = scheduleDao.getAllScheduleAndDevices()
                 for (item in schedulesDevices) {

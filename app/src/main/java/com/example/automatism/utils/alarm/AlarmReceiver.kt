@@ -80,6 +80,15 @@ class AlarmReceiver : BroadcastReceiver() {
                                 "status" to false
                             )
                         )
+                        if(frequency == null || frequency == -1) {
+                            val change_is_activated = RetrofitInstance.api.setIsActivated(
+                                reglageId = scheduleId,
+                                authToken = myPreferences.getString("jwt","")!!,
+                                requestBody = mapOf(
+                                    "isActivated" to false
+                                )
+                            )
+                        }
                     }
                 }
             }
@@ -91,13 +100,13 @@ class AlarmReceiver : BroadcastReceiver() {
         // If the frequency is null, then the alarm will not repeat.
         var shouldExit = false
 
-        if(isMissed!!) {
+        if(isMissed != null && isMissed == true) {
             scope.launch(Dispatchers.IO) {
                 if(action == false ){
                     scheduleDao.updateScheduleStatuses(scheduleId!!, statusOn = false, statusOff = false)
                     if(frequency == -1) {
                         var schedule1 = scheduleDao.getScheduleById(scheduleId!!)
-                        val modified_Device = schedule1
+                        var modified_Device = schedule1
                         modified_Device.activated = false
                         scheduleDao.updateSchedule(modified_Device)
                     }
@@ -105,14 +114,15 @@ class AlarmReceiver : BroadcastReceiver() {
                     scheduleDao.updateScheduleStatuses(scheduleId!!, statusOn = true, statusOff = false)
                 }
             }
+            shouldExit = true
             return
         }
 
-        if(frequency == -1) {
+        if(frequency == -1 || frequency == null) {
             if(action == false) {
                 scope.launch(Dispatchers.IO) {
                     var schedule1 = scheduleDao.getScheduleById(scheduleId!!)
-                    val modified_Device = schedule1
+                    var modified_Device = schedule1
                     modified_Device.activated = false
                     Log.d("MainActivity2","Updating One-Time Row")
                     scheduleDao.updateSchedule(modified_Device)

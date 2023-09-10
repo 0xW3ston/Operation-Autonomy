@@ -1,5 +1,6 @@
 package com.example.automatism.activities
 
+import android.content.Context
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -13,11 +14,12 @@ import com.example.automatism.R
 import com.example.automatism.utils.AuthHelper
 import com.example.automatism.utils.alarm.AndroidAlarmScheduler
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 class SplashActivity : AppCompatActivity() {
-    private val splashDuration = 5500L // 3 seconds
+    private val splashDuration = 6000L // 3 seconds
     // private lateinit var myPreferences: SharedPreferences
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,16 +27,16 @@ class SplashActivity : AppCompatActivity() {
         try{
         Log.d("MainActivity2", "onCreate of Splash Activity")
         // myPreferences = this.getSharedPreferences("MyPreferences", Context.MODE_PRIVATE)
-
-        val Scheduler = AndroidAlarmScheduler(this)
-
-        val authHelper = AuthHelper(this)
+            val Scheduler = AndroidAlarmScheduler(this)
+            val user_id = this.getSharedPreferences("MyPreferences", Context.MODE_PRIVATE).getLong("CURRENT_USER_ID", -1L)
+            val authHelper = AuthHelper(this)
 
         //var current_user_id = myPreferences.getLong("CURRENT_USER_ID", -1L)
         lifecycleScope.launch(Dispatchers.IO) {
             runBlocking{
                 Scheduler.deinitialize()
-                Scheduler.initialize()
+                delay(1000)
+                Scheduler.initialize(user_id)
             }
             // To display the splash screen for a certain duration before redirecting
             Handler(Looper.getMainLooper()).postDelayed({

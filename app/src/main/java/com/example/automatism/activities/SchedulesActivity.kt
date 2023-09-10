@@ -157,7 +157,10 @@ class SchedulesActivity : AppCompatActivity() {
 
                 val frequency = (if ((schedule["frequency"] as Number).toInt() == 0) null else (schedule["frequency"] as Number).toInt())
                 val isActivatedRaw = scheduleDao.getIsActivatedStatusById((schedule["id"]!! as Number).toLong())
-                val isActivated = (if (isActivatedRaw != null) isActivatedRaw else true)
+                val isActivatedLocal = (if (isActivatedRaw != null) isActivatedRaw else true)
+                val isActivatedOnline = schedule["isActivated"] as Boolean
+                val isActivated = (if (isActivatedLocal == false || isActivatedOnline == false) false else true)
+
 
                 // TODO("DEVICE_ID is changed to ID (which is affecter_id")
                 val structuredDeviceMap = mapOf<String,Any?>(
@@ -209,6 +212,8 @@ class SchedulesActivity : AppCompatActivity() {
             val textName = rowMain.findViewById<TextView>(R.id.textName)
             val textTimeOff = rowMain.findViewById<TextView>(R.id.textTimeOff)
             val textTimeOn = rowMain.findViewById<TextView>(R.id.textTimeOn)
+            val textInterval = rowMain.findViewById<TextView>(R.id.textChaque24h)
+            val textActive = rowMain.findViewById<TextView>(R.id.textActive)
             val btnEdit = rowMain.findViewById<ImageButton>(R.id.btnEdit)
             val btnDelete = rowMain.findViewById<ImageButton>(R.id.btnDelete)
 
@@ -217,6 +222,8 @@ class SchedulesActivity : AppCompatActivity() {
             textName.text = schedule.name
             textTimeOff.text = "Time Off: ${schedule.hour_off}:${schedule.minute_off}"
             textTimeOn.text = "Time On: ${schedule.hour_on}:${schedule.minute_on}"
+            textInterval.text = "Chaque-24h: ${ if (schedule.frequency != null) "Oui" else "Non"}"
+            textActive.text = "Active: ${ if (schedule.activated) "Oui" else "Non"}"
 
             btnDelete.setOnClickListener {
                 deleteSchedule(schedule)
