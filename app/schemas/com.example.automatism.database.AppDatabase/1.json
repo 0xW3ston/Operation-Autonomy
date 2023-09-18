@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "7aa51a487efc752ae58259f3593f6c74",
+    "identityHash": "3751348d4c5f036ad136e724712671b4",
     "entities": [
       {
         "tableName": "users",
@@ -112,7 +112,7 @@
       },
       {
         "tableName": "schedules",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `minute_on` INTEGER NOT NULL, `hour_on` INTEGER NOT NULL, `minute_off` INTEGER NOT NULL, `hour_off` INTEGER NOT NULL, `frequency` INTEGER, `date_initial` INTEGER, `status_on` INTEGER NOT NULL, `status_off` INTEGER NOT NULL, `device` INTEGER NOT NULL, `activated` INTEGER NOT NULL, FOREIGN KEY(`device`) REFERENCES `devices`(`id`) ON UPDATE CASCADE ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `minute_on` INTEGER, `hour_on` INTEGER, `minute_off` INTEGER, `hour_off` INTEGER, `frequency` INTEGER, `date_initial` INTEGER, `status_on` INTEGER NOT NULL, `status_off` INTEGER NOT NULL, `device` INTEGER NOT NULL, `activated` INTEGER NOT NULL, FOREIGN KEY(`device`) REFERENCES `devices`(`id`) ON UPDATE CASCADE ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -130,25 +130,25 @@
             "fieldPath": "minute_on",
             "columnName": "minute_on",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "hour_on",
             "columnName": "hour_on",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "minute_off",
             "columnName": "minute_off",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "hour_off",
             "columnName": "hour_off",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "frequency",
@@ -212,7 +212,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7aa51a487efc752ae58259f3593f6c74')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3751348d4c5f036ad136e724712671b4')"
     ]
   }
 }

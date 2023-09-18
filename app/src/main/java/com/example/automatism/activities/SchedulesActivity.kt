@@ -166,10 +166,10 @@ class SchedulesActivity : AppCompatActivity() {
                 val structuredDeviceMap = mapOf<String,Any?>(
                     "id" to (schedule["id"]!! as Number).toLong(),
                     "name" to schedule["name"]!!,
-                    "minute_on" to (schedule["minute_on"]!! as Number).toInt(),
-                    "hour_on" to (schedule["heure_on"]!! as Number).toInt(),
-                    "minute_off" to (schedule["minute_off"]!! as Number).toInt(),
-                    "hour_off" to (schedule["heure_off"]!! as Number).toInt(),
+                    "minute_on" to (schedule["minute_on"] as Int?),
+                    "hour_on" to (schedule["heure_on"] as Int?),
+                    "minute_off" to (schedule["minute_off"] as Int?),
+                    "hour_off" to (schedule["heure_off"] as Int?),
                     "frequency" to frequency,
                     "device" to (schedule["affecter_id"]!! as Number).toLong(),
                     "activated" to isActivated
@@ -220,9 +220,9 @@ class SchedulesActivity : AppCompatActivity() {
             val schedule = mDataList[position]
 
             textName.text = schedule.name
-            textTimeOff.text = "Time Off: ${schedule.hour_off}:${schedule.minute_off}"
-            textTimeOn.text = "Time On: ${schedule.hour_on}:${schedule.minute_on}"
-            textInterval.text = "Chaque-24h: ${ if (schedule.frequency != null) "Oui" else "Non"}"
+            textTimeOff.text = if (schedule.hour_off == null) "" else "Time Off: ${schedule.hour_off}:${schedule.minute_off}"
+            textTimeOn.text = if (schedule.hour_on == null) "" else "Time On: ${schedule.hour_on}:${schedule.minute_on}"
+            textInterval.text = if (schedule.frequency != null) "Chaque-${schedule.frequency}h" else "1 fois"
             textActive.text = "Active: ${ if (schedule.activated) "Oui" else "Non"}"
 
             btnDelete.setOnClickListener {
@@ -266,39 +266,45 @@ class SchedulesActivity : AppCompatActivity() {
 
                     val deviceSchedule = scheduleDao.getScheduleAndDeviceByScheduleId(schedule.id)
 
-                    Scheduler.cancel(
-                        AlarmItem(
-                            time = mapOf(
-                                "hour" to deviceSchedule.schedule.hour_on,
-                                "minute" to deviceSchedule.schedule.minute_on
-                            ),
-                            frequency = deviceSchedule.schedule.frequency,
-                            telephone = deviceSchedule.device.telephone,
-                            messageOn = deviceSchedule.device.msg_on,
-                            messageOff = deviceSchedule.device.msg_off,
-                            action = true,
-                            deviceId = deviceSchedule.device.id,
-                            userId = deviceSchedule.device.user_id,
-                            scheduleId = deviceSchedule.schedule.id
+                    if (deviceSchedule.schedule.hour_on != null && deviceSchedule.schedule.minute_on != null)
+                    {
+                        Scheduler.cancel(
+                            AlarmItem(
+                                time = mapOf(
+                                    "hour" to deviceSchedule.schedule.hour_on!!,
+                                    "minute" to deviceSchedule.schedule.minute_on!!
+                                ),
+                                frequency = deviceSchedule.schedule.frequency,
+                                telephone = deviceSchedule.device.telephone,
+                                messageOn = deviceSchedule.device.msg_on,
+                                messageOff = deviceSchedule.device.msg_off,
+                                action = true,
+                                deviceId = deviceSchedule.device.id,
+                                userId = deviceSchedule.device.user_id,
+                                scheduleId = deviceSchedule.schedule.id
+                            )
                         )
-                    )
+                    }
 
-                    Scheduler.cancel(
-                        AlarmItem(
-                            time = mapOf(
-                                "hour" to deviceSchedule.schedule.hour_off,
-                                "minute" to deviceSchedule.schedule.minute_off
-                            ),
-                            frequency = deviceSchedule.schedule.frequency,
-                            telephone = deviceSchedule.device.telephone,
-                            messageOn = deviceSchedule.device.msg_on,
-                            messageOff = deviceSchedule.device.msg_off,
-                            action = false,
-                            deviceId = deviceSchedule.device.id,
-                            userId = deviceSchedule.device.user_id,
-                            scheduleId = deviceSchedule.schedule.id
+                    if (deviceSchedule.schedule.hour_off != null && deviceSchedule.schedule.minute_off != null)
+                    {
+                        Scheduler.cancel(
+                            AlarmItem(
+                                time = mapOf(
+                                    "hour" to deviceSchedule.schedule.hour_off!!,
+                                    "minute" to deviceSchedule.schedule.minute_off!!
+                                ),
+                                frequency = deviceSchedule.schedule.frequency,
+                                telephone = deviceSchedule.device.telephone,
+                                messageOn = deviceSchedule.device.msg_on,
+                                messageOff = deviceSchedule.device.msg_off,
+                                action = false,
+                                deviceId = deviceSchedule.device.id,
+                                userId = deviceSchedule.device.user_id,
+                                scheduleId = deviceSchedule.schedule.id
+                            )
                         )
-                    )
+                    }
 
                     scheduleDao.deleteSchedule(schedule)
                     Log.d("MainActivity2", "Removal of 2 alarms (on/off)")

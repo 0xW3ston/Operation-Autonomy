@@ -51,26 +51,14 @@ class ModifyScheduleActivity : AppCompatActivity() {
 
             // Set up time input validation
             setupTimeInputValidation(
-                binding.modifyHourOnInputLayout,
-                binding.modifyEditTextHourOn,
+                binding.modifyHourInputLayout,
+                binding.modifyEditTextHour,
                 0,
                 23
             )
             setupTimeInputValidation(
-                binding.modifyHourOffInputLayout,
-                binding.modifyEditTextHourOff,
-                0,
-                23
-            )
-            setupTimeInputValidation(
-                binding.modifyMinuteOnInputLayout,
-                binding.modifyEditTextMinuteOn,
-                0,
-                59
-            )
-            setupTimeInputValidation(
-                binding.modifyMinuteOffInputLayout,
-                binding.modifyEditTextMinuteOff,
+                binding.modifyMinuteInputLayout,
+                binding.modifyEditTextMinute,
                 0,
                 59
             )
@@ -112,6 +100,15 @@ class ModifyScheduleActivity : AppCompatActivity() {
                     deviceNames
                 )
                 binding.modifyDeviceComboBox.adapter = adapter
+                // Create an array of action options and their corresponding values
+                val actionOptions = arrayOf("No", "Yes")
+                val actionValues = intArrayOf(0, 1)
+
+                // Create an ArrayAdapter for the actionSpinner
+                val actionAdapter = ArrayAdapter(this@ModifyScheduleActivity , android.R.layout.simple_spinner_item, actionOptions)
+
+                // Set the adapter for the actionSpinner
+                binding.modifyActionSpinner.adapter = actionAdapter
             }
 
             val scheduleId = intent.getLongExtra("schedule_id", -1L)
@@ -122,11 +119,11 @@ class ModifyScheduleActivity : AppCompatActivity() {
 
                     runOnUiThread {
                         if(schedule.frequency == null) {
-                            binding.modifyCheckboxFrequency.isChecked = false
-                            // binding.modifyFrequencyLabel.visibility = View.GONE
-                            // binding.modifyFrequencySlider.visibility = View.GONE
+                            binding.modifyNoRepeatRadioButton.isChecked = true
+                        } else if(schedule.frequency != 24) {
+                            binding.modifyOneHourRepeatRadioButton.isChecked = true
                         } else if(schedule.frequency == 24) {
-                            binding.modifyCheckboxFrequency.isChecked = true
+                            binding.modifyTwentyFourHourRepeatRadioButton.isChecked = true
                         }
 
                         binding.modifyEditTextName.setText(schedule.name)
@@ -135,10 +132,8 @@ class ModifyScheduleActivity : AppCompatActivity() {
                         if (selectedDeviceIndex != -1) {
                             binding.modifyDeviceComboBox.setSelection(selectedDeviceIndex)
                         }
-                        binding.modifyEditTextHourOn.setText(schedule.hour_on.toString())
-                        binding.modifyEditTextMinuteOn.setText(schedule.minute_on.toString())
-                        binding.modifyEditTextHourOff.setText(schedule.hour_off.toString())
-                        binding.modifyEditTextMinuteOff.setText(schedule.minute_off.toString())
+                        binding.modifyEditTextHour.setText(schedule.hour_on.toString())
+                        binding.modifyEditTextMinute.setText(schedule.minute_on.toString())
                         // TODO("Fix This, The Frequency can be set to null or it can be an Int")
                         // binding.modifyFrequencySlider.progress = schedule.frequency
                     }
@@ -148,30 +143,43 @@ class ModifyScheduleActivity : AppCompatActivity() {
             // Implement the logic to update the schedule and handle the submit button click event here.
             binding.modifyBtnSubmit.setOnClickListener {
                 // Check the state of the checkbox
-                val isPeriodic = binding.modifyCheckboxFrequency.isChecked
+
+                val frequency = if (binding.modifyNoRepeatRadioButton.isChecked){
+                    null
+                } else if(binding.modifyOneHourRepeatRadioButton.isChecked == true) {
+                    1
+                } else if(binding.modifyTwentyFourHourRepeatRadioButton.isChecked == true) {
+                    24
+                } else {
+                    null
+                }
 
                 val schedule = scheduleDevice.schedule
                 val device = scheduleDevice.device
                 val name = binding.modifyEditTextName.text.toString()
                 val deviceId = devicesList[(binding.modifyDeviceComboBox.selectedItemId).toInt()].id
-                val hourOn = binding.modifyEditTextHourOn.text.toString().toInt()
-                val minuteOn = binding.modifyEditTextMinuteOn.text.toString().toInt()
-                val hourOff = binding.modifyEditTextHourOff.text.toString().toInt()
-                val minuteOff = binding.modifyEditTextMinuteOff.text.toString().toInt()
-                val frequency = if (isPeriodic) 24 else null
+                val hour = binding.modifyEditTextHour.text.toString().toInt()
+                val minute = binding.modifyEditTextMinute.text.toString().toInt()
+
+                val actionOptions = arrayOf("No", "Yes")
+                val actionValues = intArrayOf(0, 1)
+                val selectedItemPosition = binding.modifyActionSpinner.selectedItemPosition
+                val selectedValue = actionValues[selectedItemPosition]
+
+                val initial_date = timecalc.calculateInitialDelay(hour, minute)
 
                 lifecycleScope.launch(Dispatchers.IO) {
                     try {
                         var updatedSchedule = Schedule(
                             id = schedule.id,
                             name = name,
-                            hour_on = hourOn,
-                            minute_on = minuteOn,
-                            hour_off = hourOff,
-                            minute_off = minuteOff,
+                            hour_on = if (selectedItemPosition == 1) hour else null,
+                            minute_on = if (selectedItemPosition == 1) minute else null,
+                            hour_off = if (selectedItemPosition == 0) hour else null,
+                            minute_off = if (selectedItemPosition == 0) minute else null,
                             frequency = frequency,
                             device = deviceId,
-                            date_initial = timecalc.calculateInitialDelay(hourOn, minuteOn)
+                            date_initial = initial_date
                         )
                         if(myPreferences.getBoolean("USER_ACTIVE",false)){
                             var authToken = myPreferences.getString("jwt","")
@@ -197,77 +205,85 @@ class ModifyScheduleActivity : AppCompatActivity() {
                         Log.w("MainActivity2", "After Update")
                         // Schedule Cancellation:
 
-                        Scheduler.cancel(
-                            AlarmItem(
-                                time = mapOf(
-                                    "hour" to schedule.hour_on,
-                                    "minute" to schedule.minute_on
-                                ),
-                                frequency = schedule.frequency,
-                                telephone = device.telephone,
-                                messageOn = device.msg_on,
-                                messageOff = device.msg_off,
-                                action = true,
-                                deviceId = device.id,
-                                userId = device.user_id,
-                                scheduleId = scheduleId
+                        if (schedule.hour_on != null && schedule.minute_on != null){
+                            Scheduler.cancel(
+                                AlarmItem(
+                                    time = mapOf(
+                                        "hour" to schedule.hour_on!!,
+                                        "minute" to schedule.minute_on!!
+                                    ),
+                                    frequency = schedule.frequency,
+                                    telephone = device.telephone,
+                                    messageOn = device.msg_on,
+                                    messageOff = device.msg_off,
+                                    action = true,
+                                    deviceId = device.id,
+                                    userId = device.user_id,
+                                    scheduleId = scheduleId
+                                )
                             )
-                        )
+                        }
 
-                        Scheduler.cancel(
-                            AlarmItem(
-                                time = mapOf(
-                                    "hour" to schedule.hour_off,
-                                    "minute" to schedule.minute_off
-                                ),
-                                frequency = schedule.frequency,
-                                telephone = device.telephone,
-                                messageOn = device.msg_on,
-                                messageOff = device.msg_off,
-                                action = false,
-                                deviceId = device.id,
-                                userId = device.user_id,
-                                scheduleId = scheduleId
+                        if (schedule.hour_off != null && schedule.minute_off != null){
+                            Scheduler.cancel(
+                                AlarmItem(
+                                    time = mapOf(
+                                        "hour" to schedule.hour_off!!,
+                                        "minute" to schedule.minute_off!!
+                                    ),
+                                    frequency = schedule.frequency,
+                                    telephone = device.telephone,
+                                    messageOn = device.msg_on,
+                                    messageOff = device.msg_off,
+                                    action = false,
+                                    deviceId = device.id,
+                                    userId = device.user_id,
+                                    scheduleId = scheduleId
+                                )
                             )
-                        )
+                        }
 
                         // Schedule Reschudeling:
 
-                        Scheduler.schedule(
-                            AlarmItem(
-                                time = mapOf(
-                                    "hour" to hourOn,
-                                    "minute" to minuteOn
+                        if (selectedItemPosition == 1){
+                            Scheduler.schedule(
+                                AlarmItem(
+                                    time = mapOf(
+                                        "hour" to hour,
+                                        "minute" to minute
+                                    ),
+                                    frequency = frequency,
+                                    telephone = device.telephone,
+                                    messageOn = device.msg_on,
+                                    messageOff = device.msg_off,
+                                    action = true,
+                                    deviceId = deviceId,
+                                    userId = device.user_id,
+                                    scheduleId = scheduleId
                                 ),
-                                frequency = frequency,
-                                telephone = device.telephone,
-                                messageOn = device.msg_on,
-                                messageOff = device.msg_off,
-                                action = true,
-                                deviceId = deviceId,
-                                userId = device.user_id,
-                                scheduleId = scheduleId
-                            ),
-                            true
-                        )
+                                true
+                            )
+                        }
 
-                        Scheduler.schedule(
-                            AlarmItem(
-                                time = mapOf(
-                                    "hour" to hourOff,
-                                    "minute" to minuteOff
+                        if (selectedItemPosition == 0){
+                            Scheduler.schedule(
+                                AlarmItem(
+                                    time = mapOf(
+                                        "hour" to hour,
+                                        "minute" to minute
+                                    ),
+                                    frequency = frequency,
+                                    telephone = device.telephone,
+                                    messageOn = device.msg_on,
+                                    messageOff = device.msg_off,
+                                    action = false,
+                                    deviceId = deviceId,
+                                    userId = device.user_id,
+                                    scheduleId = scheduleId
                                 ),
-                                frequency = frequency,
-                                telephone = device.telephone,
-                                messageOn = device.msg_on,
-                                messageOff = device.msg_off,
-                                action = false,
-                                deviceId = deviceId,
-                                userId = device.user_id,
-                                scheduleId = scheduleId
-                            ),
-                            true
-                        )
+                                true
+                            )
+                        }
 
                         Log.w("MainActivity2", "After Reschudeling Good:")
 

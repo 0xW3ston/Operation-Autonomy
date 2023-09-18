@@ -11,9 +11,10 @@
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="16dp">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/modifyEditTextName"
@@ -23,151 +24,104 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
-    <LinearLayout
-        android:id="@+id/modifyOnTimeLayout"
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/modifyHourInputLayout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="8dp"
         app:layout_constraintTop_toBottomOf="@id/modifyNameInputLayout"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp">
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/modifyHourOnInputLayout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_width="0dp"
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/modifyEditTextHour"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            >
+            android:inputType="number"
+            android:maxLines="1"
+            android:hint="Hour"/>
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/modifyEditTextHourOn"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="number"
-                android:maxLines="1"
-                android:hint="Hour On"/>
+    </com.google.android.material.textfield.TextInputLayout>
 
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/modifyMinuteOnInputLayout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            >
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/modifyEditTextMinuteOn"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="number"
-                android:maxLines="1"
-                android:hint="Minute On"/>
-
-        </com.google.android.material.textfield.TextInputLayout>
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/modifyOffTimeLayout"
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/modifyMinuteInputLayout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="8dp"
-        app:layout_constraintTop_toBottomOf="@id/modifyOnTimeLayout"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/modifyHourOffInputLayout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            >
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/modifyEditTextHourOff"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="number"
-                android:maxLines="1"
-                android:hint="Hour Off"/>
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/modifyMinuteOffInputLayout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            >
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/modifyEditTextMinuteOff"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="number"
-                android:maxLines="1"
-                android:hint="Minute Off"
-                />
-
-        </com.google.android.material.textfield.TextInputLayout>
-    </LinearLayout>
-
-    <!-- <TextView
-        android:id="@+id/modifyFrequencyLabel"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Frequency (in hours)"
-        app:layout_constraintTop_toBottomOf="@id/modifyOffTimeLayout"
+        app:layout_constraintTop_toBottomOf="@id/modifyHourInputLayout"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="8dp" />
+        android:layout_marginTop="8dp">
 
-    <SeekBar
-        android:id="@+id/modifyFrequencySlider"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:min="24"
-        android:max="72"
-        android:progress="24"
-        app:layout_constraintTop_toBottomOf="@id/modifyFrequencyLabel"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" /> -->
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/modifyEditTextMinute"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:maxLines="1"
+            android:hint="Minute"/>
+
+    </com.google.android.material.textfield.TextInputLayout>
 
     <Spinner
         android:id="@+id/modifyDeviceComboBox"
         android:layout_width="0dp"
         android:layout_height="40dp"
         android:hint="Select Device"
-        android:layout_marginBottom="8dp"
-        app:layout_constraintTop_toBottomOf="@id/modifyOffTimeLayout"
+        app:layout_constraintTop_toBottomOf="@id/modifyMinuteInputLayout"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:enabled="false" />
+        android:layout_marginTop="8dp" />
 
-    <CheckBox
-        android:id="@+id/modifyCheckboxFrequency"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Chaque 24h"
+    <Spinner
+        android:id="@+id/modifyActionSpinner"
+        android:layout_width="0dp"
+        android:layout_height="40dp"
+        android:hint="Select Action"
         app:layout_constraintTop_toBottomOf="@id/modifyDeviceComboBox"
         app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="16dp"/>
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp" />
+
+    <RadioGroup
+        android:id="@+id/modifyRepeatRadioGroup"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@id/modifyActionSpinner"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp">
+
+        <RadioButton
+            android:id="@+id/modifyNoRepeatRadioButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No Repeat" />
+
+        <RadioButton
+            android:id="@+id/modifyOneHourRepeatRadioButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Every 1 Hour" />
+
+        <RadioButton
+            android:id="@+id/modifyTwentyFourHourRepeatRadioButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Every 24 Hours" />
+    </RadioGroup>
 
     <Button
         android:id="@+id/modifyBtnSubmit"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Update"
-        app:layout_constraintTop_toBottomOf="@id/modifyDeviceComboBox"
+        android:text="Submit"
+        app:layout_constraintTop_toBottomOf="@id/modifyRepeatRadioGroup"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="16dp"
-        android:layout_marginBottom="16dp"/>
+        android:layout_marginBottom="16dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

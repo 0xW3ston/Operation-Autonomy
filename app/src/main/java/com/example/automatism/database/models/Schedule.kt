@@ -21,13 +21,13 @@ data class Schedule(
     @SerializedName("name")
     var name: String,
     @SerializedName("minute_on")
-    var minute_on: Int,
+    var minute_on: Int? = null,
     @SerializedName("hour_on")
-    var hour_on: Int,
+    var hour_on: Int? = null,
     @SerializedName("minute_off")
-    var minute_off: Int,
+    var minute_off: Int? = null,
     @SerializedName("hour_off")
-    var hour_off: Int,
+    var hour_off: Int? = null,
     @SerializedName("frequency")
     var frequency: Int?,
     @SerializedName("dateInitial")
@@ -59,10 +59,10 @@ data class Schedule(
             return Schedule(
                 id = map["id"] as Long,
                 name = map["name"] as String,
-                minute_on = map["minute_on"] as Int,
-                hour_on = map["hour_on"] as Int,
-                minute_off = map["minute_off"] as Int,
-                hour_off = map["hour_off"] as Int,
+                minute_on = map["minute_on"] as Int?,
+                hour_on = map["hour_on"] as Int?,
+                minute_off = map["minute_off"] as Int?,
+                hour_off = map["hour_off"] as Int?,
                 frequency = map["frequency"] as Int?,
                 device = map["device"] as Long,
                 activated = map["activated"] as Boolean

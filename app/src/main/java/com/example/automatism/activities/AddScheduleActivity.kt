@@ -49,10 +49,8 @@ class AddScheduleActivity : AppCompatActivity() {
         val scheduleDao = database.scheduleDao()
 
         // Set up time input validation
-        setupTimeInputValidation(binding.hourOnInputLayout, binding.editTextHourOn, 0, 23)
-        setupTimeInputValidation(binding.hourOffInputLayout, binding.editTextHourOff, 0, 23)
-        setupTimeInputValidation(binding.minuteOnInputLayout, binding.editTextMinuteOn, 0, 59)
-        setupTimeInputValidation(binding.minuteOffInputLayout, binding.editTextMinuteOff, 0, 59)
+        setupTimeInputValidation(binding.hourInputLayout, binding.editTextHour, 0, 23)
+        setupTimeInputValidation(binding.minuteInputLayout, binding.editTextMinute, 0, 59)
 
         // Set up frequency slider label
         /* binding.frequencySlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -72,6 +70,16 @@ class AddScheduleActivity : AppCompatActivity() {
             val deviceNames = devicesList.map { it.name }
             val adapter = ArrayAdapter(this@AddScheduleActivity, android.R.layout.simple_spinner_item, deviceNames)
             binding.deviceComboBox.adapter = adapter
+
+            // Create an array of action options and their corresponding values
+            val actionOptions = arrayOf("No", "Yes")
+            val actionValues = intArrayOf(0, 1)
+
+            // Create an ArrayAdapter for the actionSpinner
+            val actionAdapter = ArrayAdapter(this@AddScheduleActivity , android.R.layout.simple_spinner_item, actionOptions)
+
+            // Set the adapter for the actionSpinner
+            binding.actionSpinner.adapter = actionAdapter
         }
 
         /* binding.checkboxFrequency.setOnCheckedChangeListener { _, isChecked ->
@@ -87,44 +95,57 @@ class AddScheduleActivity : AppCompatActivity() {
             // val id = binding.editTextId.text.toString().toLong()
             val name = binding.editTextName.text.toString()
             val deviceId = devicesList[(binding.deviceComboBox.selectedItemId).toInt()].id // The selected device ID
-            val hourOn = binding.editTextHourOn.text.toString().toInt()
-            val minuteOn = binding.editTextMinuteOn.text.toString().toInt()
-            val hourOff = binding.editTextHourOff.text.toString().toInt()
-            val minuteOff = binding.editTextMinuteOff.text.toString().toInt()
+
+            val hourInput = binding.editTextHour.text.toString().toInt()
+            val minuteInput = binding.editTextMinute.text.toString().toInt()
+
+            val actionOptions = arrayOf("No", "Yes")
+            val actionValues = intArrayOf(0, 1)
+            val selectedItemPosition = binding.actionSpinner.selectedItemPosition
+            val selectedValue = actionValues[selectedItemPosition]
+
             // val frequency = if (binding.checkboxFrequency.isChecked) null else binding.frequencySlider.progress.toInt()
-            val frequency = if (binding.checkboxFrequency.isChecked) {
+            val frequency = if (binding.noRepeatRadioButton.isChecked) {
+                null
+            } else if (binding.oneHourRepeatRadioButton.isChecked) {
+                1
+            } else if (binding.twentyFourHourRepeatRadioButton.isChecked) {
                 24
             } else {
                 null
             }
+
             val current_user_id = myPreferences.getLong("CURRENT_USER_ID", -1L)
             lifecycleScope.launch(Dispatchers.IO) {
                 var scheduleId = -1L
+                val initial_date = timecalc.calculateInitialDelay(hourInput, minuteInput)
                 try {
                     val device = deviceDao.getDeviceById(deviceId)
                     val test = Schedule(
                         name = name,
-                        hour_on = hourOn,
-                        minute_on = minuteOn,
-                        hour_off = hourOff,
-                        minute_off = minuteOff,
+                        hour_on = if (selectedItemPosition == 1) hourInput else null,
+                        minute_on = if (selectedItemPosition == 1) minuteInput else null,
+                        hour_off = if (selectedItemPosition == 0) hourInput else null,
+                        minute_off = if (selectedItemPosition == 0) minuteInput else null,
                         frequency = frequency,
                         device = deviceId,
-                        date_initial = timecalc.calculateInitialDelay(hourOn, minuteOn)
+                        date_initial = initial_date
                     )
+                    // TODO ("FIX INITIAL DELAY")
                     Log.d("MainActivity2","${test}")
 
                     if(myPreferences.getBoolean("USER_ACTIVE",false)){
                         val newSchedule = Schedule(
                             name = name,
-                            hour_on = hourOn,
-                            minute_on = minuteOn,
-                            hour_off = hourOff,
-                            minute_off = minuteOff,
+                            hour_on = if (selectedItemPosition == 1) hourInput else null,
+                            minute_on = if (selectedItemPosition == 1) minuteInput else null,
+                            hour_off = if (selectedItemPosition == 0) hourInput else null,
+                            minute_off = if (selectedItemPosition == 0) minuteInput else null,
                             frequency = frequency ?: 0,
                             device = deviceId,
-                            date_initial = timecalc.calculateInitialDelay(hourOn, minuteOn)
+                            date_initial = initial_date
                         )
+                        // TODO ("FIX INITIAL DELAY")
                         var api = RetrofitInstance.api.addNewSchedule(
                             authToken = myPreferences.getString("jwt","")!!,
                             requestBody = newSchedule
@@ -137,20 +158,82 @@ class AddScheduleActivity : AppCompatActivity() {
                                 Schedule(
                                     id = (insertedScheduleId as Double).toLong(),
                                     name = name,
-                                    hour_on = hourOn,
-                                    minute_on = minuteOn,
-                                    hour_off = hourOff,
-                                    minute_off = minuteOff,
+                                    hour_on = if (selectedItemPosition == 1) hourInput else null,
+                                    minute_on = if (selectedItemPosition == 1) minuteInput else null,
+                                    hour_off = if (selectedItemPosition == 0) hourInput else null,
+                                    minute_off = if (selectedItemPosition == 0) minuteInput else null,
                                     frequency = frequency,
                                     device = deviceId,
-                                    date_initial = timecalc.calculateInitialDelay(hourOn, minuteOn)
+                                    date_initial = initial_date
                                 )
+                                // TODO ("FIX INITIAL DELAY")
                             )
+
+                            if (selectedItemPosition == 1){
+                                Scheduler.schedule(
+                                    AlarmItem(
+                                        time = mapOf(
+                                            "hour" to hourInput,
+                                            "minute" to minuteInput
+                                        ),
+                                        frequency = frequency,
+                                        telephone = device.telephone,
+                                        messageOn = device.msg_on,
+                                        messageOff = device.msg_off,
+                                        action = true,
+                                        deviceId = deviceId,
+                                        userId = current_user_id,
+                                        scheduleId = scheduleId
+                                    ),
+                                    isInitial = true
+                                )
+                            }
+
+                            if (selectedItemPosition == 0){
+                                Scheduler.schedule(
+                                    AlarmItem(
+                                        time = mapOf(
+                                            "hour" to hourInput,
+                                            "minute" to minuteInput
+                                        ),
+                                        frequency = frequency,
+                                        telephone = device.telephone,
+                                        messageOn = device.msg_on,
+                                        messageOff = device.msg_off,
+                                        action = false,
+                                        deviceId = deviceId,
+                                        userId = current_user_id,
+                                        scheduleId = scheduleId
+                                    ),
+                                    isInitial = true
+                                )
+                            }
+
+                        } else {
+                            throw Exception("Error Of Insertion: Server-Side")
+                        }
+                    } else {
+                        scheduleId = scheduleDao.insertSchedule(
+                            Schedule(
+                                name = name,
+                                hour_on = if (selectedItemPosition == 1) hourInput else null,
+                                minute_on = if (selectedItemPosition == 1) minuteInput else null,
+                                hour_off = if (selectedItemPosition == 0) hourInput else null,
+                                minute_off = if (selectedItemPosition == 0) minuteInput else null,
+                                frequency = frequency,
+                                device = deviceId,
+                                date_initial = initial_date
+                            )
+                            // TODO ("FIX INITIAL DELAY")
+                        )
+
+                        if (selectedItemPosition == 1)
+                        {
                             Scheduler.schedule(
                                 AlarmItem(
                                     time = mapOf(
-                                        "hour" to hourOn,
-                                        "minute" to minuteOn
+                                        "hour" to hourInput,
+                                        "minute" to minuteInput
                                     ),
                                     frequency = frequency,
                                     telephone = device.telephone,
@@ -163,12 +246,15 @@ class AddScheduleActivity : AppCompatActivity() {
                                 ),
                                 isInitial = true
                             )
+                        }
 
+                        if (selectedItemPosition == 0)
+                        {
                             Scheduler.schedule(
                                 AlarmItem(
                                     time = mapOf(
-                                        "hour" to hourOff,
-                                        "minute" to minuteOff
+                                        "hour" to hourInput,
+                                        "minute" to minuteInput
                                     ),
                                     frequency = frequency,
                                     telephone = device.telephone,
@@ -181,58 +267,7 @@ class AddScheduleActivity : AppCompatActivity() {
                                 ),
                                 isInitial = true
                             )
-                        } else {
-                            throw Exception("Error Of Insertion: Server-Side")
                         }
-                    } else {
-                        scheduleId = scheduleDao.insertSchedule(
-                            Schedule(
-                                name = name,
-                                hour_on = hourOn,
-                                minute_on = minuteOn,
-                                hour_off = hourOff,
-                                minute_off = minuteOff,
-                                frequency = frequency,
-                                device = deviceId,
-                                date_initial = timecalc.calculateInitialDelay(hourOn, minuteOn)
-                            )
-                        )
-
-                        Scheduler.schedule(
-                            AlarmItem(
-                                time = mapOf(
-                                    "hour" to hourOn,
-                                    "minute" to minuteOn
-                                ),
-                                frequency = frequency,
-                                telephone = device.telephone,
-                                messageOn = device.msg_on,
-                                messageOff = device.msg_off,
-                                action = true,
-                                deviceId = deviceId,
-                                userId = current_user_id,
-                                scheduleId = scheduleId
-                            ),
-                            isInitial = true
-                        )
-
-                        Scheduler.schedule(
-                            AlarmItem(
-                                time = mapOf(
-                                    "hour" to hourOff,
-                                    "minute" to minuteOff
-                                ),
-                                frequency = frequency,
-                                telephone = device.telephone,
-                                messageOn = device.msg_on,
-                                messageOff = device.msg_off,
-                                action = false,
-                                deviceId = deviceId,
-                                userId = current_user_id,
-                                scheduleId = scheduleId
-                            ),
-                            isInitial = true
-                        )
                     }
 
                     runOnUiThread {

@@ -28,25 +28,14 @@ object TimeCalculationClass {
         val now = System.currentTimeMillis()
         val specificTimeToday = getSpecificTimeMillis(hour, minute)
 
-        Log.d("MainActivity2","SpecificTimeToday: ${specificTimeToday}|CalculatedNextFrequency: ${calculateNextFrequency(specificTimeToday, frequency)}")
+        // Calculate the next scheduled time
+        var nextScheduledTime = specificTimeToday
 
-        if(
-            calculateNextFrequency(specificTimeToday, frequency) - now < 700000
-        ) {
-            val nextDaySchedule = getSpecificTimeMillis(hour, minute, 1)
-            return nextDaySchedule
+        while (nextScheduledTime <= now) {
+            nextScheduledTime += (frequency * 60 * 60 * 1000)
         }
 
-        return calculateNextFrequency(specificTimeToday, frequency)
-        /*
-        if (specificTimeToday <= now) {
-            // If the specific time has already passed today, schedule it for the same time tomorrow
-            val nextDay = getSpecificTimeMillis(hour, minute, 1)
-            return calculateNextFrequency(nextDay, frequency)
-        } else {
-            return calculateNextFrequency(specificTimeToday, frequency)
-        }
-        */
+        return nextScheduledTime
     }
     fun calculateNextFrequency(timeInMillis: Long, frequency: Int): Long {
         return timeInMillis + (frequency * 60 * 60 * 1000)
