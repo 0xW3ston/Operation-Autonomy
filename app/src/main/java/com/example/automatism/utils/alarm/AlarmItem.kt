@@ -9,5 +9,6 @@ data class AlarmItem(
     val action: Boolean,
     val deviceId: Long,
     val userId: Long,
-    val scheduleId: Long
+    val scheduleId: Long,
+    val dateInitial: Long?
 )

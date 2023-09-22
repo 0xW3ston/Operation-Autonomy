@@ -24,6 +24,19 @@ object TimeCalculationClass {
         calendar.add(Calendar.DATE, daysToAdd)
         return calendar.timeInMillis
     }
+
+    fun calculateNextScheduleWithDateInitial(dateInitial: Long, frequency: Int): Long {
+        val now = System.currentTimeMillis()
+        val specificTime = dateInitial
+
+        var nextScheduledTime = specificTime
+
+        while (nextScheduledTime <= now) {
+            nextScheduledTime += (frequency * 60 * 60 * 1000)
+        }
+
+        return nextScheduledTime
+    }
     fun calculateNextSchedule(hour: Int, minute: Int, frequency: Int): Long {
         val now = System.currentTimeMillis()
         val specificTimeToday = getSpecificTimeMillis(hour, minute)

@@ -52,6 +52,8 @@ class AddScheduleActivity : AppCompatActivity() {
         setupTimeInputValidation(binding.hourInputLayout, binding.editTextHour, 0, 23)
         setupTimeInputValidation(binding.minuteInputLayout, binding.editTextMinute, 0, 59)
 
+        binding.actionSpinner.setSelection(0);
+        binding.noRepeatRadioButton.isChecked = true
         // Set up frequency slider label
         /* binding.frequencySlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
@@ -72,7 +74,7 @@ class AddScheduleActivity : AppCompatActivity() {
             binding.deviceComboBox.adapter = adapter
 
             // Create an array of action options and their corresponding values
-            val actionOptions = arrayOf("No", "Yes")
+            val actionOptions = arrayOf("Turn Off", "Turn On")
             val actionValues = intArrayOf(0, 1)
 
             // Create an ArrayAdapter for the actionSpinner
@@ -99,7 +101,7 @@ class AddScheduleActivity : AppCompatActivity() {
             val hourInput = binding.editTextHour.text.toString().toInt()
             val minuteInput = binding.editTextMinute.text.toString().toInt()
 
-            val actionOptions = arrayOf("No", "Yes")
+            val actionOptions = arrayOf("Turn Off", "Turn On")
             val actionValues = intArrayOf(0, 1)
             val selectedItemPosition = binding.actionSpinner.selectedItemPosition
             val selectedValue = actionValues[selectedItemPosition]
@@ -146,6 +148,7 @@ class AddScheduleActivity : AppCompatActivity() {
                             date_initial = initial_date
                         )
                         // TODO ("FIX INITIAL DELAY")
+                        Log.e("MainActivity2", "Neew: ${newSchedule}")
                         var api = RetrofitInstance.api.addNewSchedule(
                             authToken = myPreferences.getString("jwt","")!!,
                             requestBody = newSchedule
@@ -183,7 +186,8 @@ class AddScheduleActivity : AppCompatActivity() {
                                         action = true,
                                         deviceId = deviceId,
                                         userId = current_user_id,
-                                        scheduleId = scheduleId
+                                        scheduleId = scheduleId,
+                                        dateInitial = initial_date
                                     ),
                                     isInitial = true
                                 )
@@ -203,7 +207,8 @@ class AddScheduleActivity : AppCompatActivity() {
                                         action = false,
                                         deviceId = deviceId,
                                         userId = current_user_id,
-                                        scheduleId = scheduleId
+                                        scheduleId = scheduleId,
+                                        dateInitial = initial_date
                                     ),
                                     isInitial = true
                                 )
@@ -242,7 +247,8 @@ class AddScheduleActivity : AppCompatActivity() {
                                     action = true,
                                     deviceId = deviceId,
                                     userId = current_user_id,
-                                    scheduleId = scheduleId
+                                    scheduleId = scheduleId,
+                                    dateInitial = initial_date
                                 ),
                                 isInitial = true
                             )
@@ -263,7 +269,8 @@ class AddScheduleActivity : AppCompatActivity() {
                                     action = false,
                                     deviceId = deviceId,
                                     userId = current_user_id,
-                                    scheduleId = scheduleId
+                                    scheduleId = scheduleId,
+                                    dateInitial = initial_date
                                 ),
                                 isInitial = true
                             )

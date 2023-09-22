@@ -22,6 +22,7 @@ import com.example.automatism.database.models.Device
 import com.example.automatism.database.models.Schedule
 import com.example.automatism.databinding.SchedulesActivityBinding
 import com.example.automatism.utils.RetrofitInstance
+import com.example.automatism.utils.TimeCalculationClass
 import com.example.automatism.utils.alarm.AlarmItem
 import com.example.automatism.utils.alarm.AndroidAlarmScheduler
 import kotlinx.coroutines.Dispatchers
@@ -37,6 +38,7 @@ class SchedulesActivity : AppCompatActivity() {
     private lateinit var database: AppDatabase
     private lateinit var Scheduler: AndroidAlarmScheduler
     private lateinit var myPreferences: SharedPreferences
+    private var timecalc: TimeCalculationClass = TimeCalculationClass
 
 
     override fun onResume() {
@@ -158,22 +160,33 @@ class SchedulesActivity : AppCompatActivity() {
                 val frequency = (if ((schedule["frequency"] as Number).toInt() == 0) null else (schedule["frequency"] as Number).toInt())
                 val isActivatedRaw = scheduleDao.getIsActivatedStatusById((schedule["id"]!! as Number).toLong())
                 val isActivatedLocal = (if (isActivatedRaw != null) isActivatedRaw else true)
-                val isActivatedOnline = schedule["isActivated"] as Boolean
+                val isActivatedOnline = if (schedule["isActivated"] == null) true else (schedule["isActivated"] as Boolean)
                 val isActivated = (if (isActivatedLocal == false || isActivatedOnline == false) false else true)
 
+                Log.d("MainActivity2","[SCHEDULES PAGE]: isActivatedRaw: ${isActivatedRaw}, isActivatedLocal: ${isActivatedLocal}, isActivatedONLINE: ${isActivatedOnline}, Real isActivated: ${isActivated}")
 
-                // TODO("DEVICE_ID is changed to ID (which is affecter_id")
+                val scheduleData = scheduleDao.getScheduleById((schedule["id"]!! as Number).toLong())
+
+                val DateInitial = if (scheduleData != null) scheduleData.date_initial else timecalc.calculateInitialDelay(
+                    if (schedule["heure_on"] == null) (schedule["heure_off"] as Number).toInt() else (schedule["heure_on"] as Number).toInt(),
+                    if (schedule["minute_on"] == null) (schedule["minute_off"] as Number).toInt() else (schedule["minute_on"] as Number).toInt()
+                )
+
+                Log.e("MainActivity2","ADMIN-SCHEDULES-${scheduleData}")
+
                 val structuredDeviceMap = mapOf<String,Any?>(
                     "id" to (schedule["id"]!! as Number).toLong(),
                     "name" to schedule["name"]!!,
-                    "minute_on" to (schedule["minute_on"] as Int?),
-                    "hour_on" to (schedule["heure_on"] as Int?),
-                    "minute_off" to (schedule["minute_off"] as Int?),
-                    "hour_off" to (schedule["heure_off"] as Int?),
+                    "minute_on" to (if (schedule["minute_on"] == null) null else (schedule["minute_on"] as Number).toInt()),
+                    "hour_on" to (if (schedule["heure_on"] == null) null else (schedule["heure_on"] as Number).toInt()),
+                    "minute_off" to (if (schedule["minute_off"] == null) null else (schedule["minute_off"] as Number).toInt()),
+                    "hour_off" to (if (schedule["heure_off"] == null) null else (schedule["heure_off"] as Number).toInt()),
                     "frequency" to frequency,
                     "device" to (schedule["affecter_id"]!! as Number).toLong(),
-                    "activated" to isActivated
+                    "activated" to isActivated,
+                    "date_initial" to DateInitial
                 )
+
                 scheduleDao.upsertSchedule(Schedule.fromMap(structuredDeviceMap))
             } catch (e: Exception) {
                 Log.e("MainActivity2","some error here in loading: $e")
@@ -220,8 +233,8 @@ class SchedulesActivity : AppCompatActivity() {
             val schedule = mDataList[position]
 
             textName.text = schedule.name
-            textTimeOff.text = if (schedule.hour_off == null) "" else "Time Off: ${schedule.hour_off}:${schedule.minute_off}"
-            textTimeOn.text = if (schedule.hour_on == null) "" else "Time On: ${schedule.hour_on}:${schedule.minute_on}"
+            textTimeOff.text = if (schedule.hour_off == null && schedule.minute_off == null) "" else "Time Off: ${schedule.hour_off}:${schedule.minute_off}"
+            textTimeOn.text = if (schedule.hour_on == null && schedule.minute_on == null) "" else "Time On: ${schedule.hour_on}:${schedule.minute_on}"
             textInterval.text = if (schedule.frequency != null) "Chaque-${schedule.frequency}h" else "1 fois"
             textActive.text = "Active: ${ if (schedule.activated) "Oui" else "Non"}"
 
@@ -281,7 +294,8 @@ class SchedulesActivity : AppCompatActivity() {
                                 action = true,
                                 deviceId = deviceSchedule.device.id,
                                 userId = deviceSchedule.device.user_id,
-                                scheduleId = deviceSchedule.schedule.id
+                                scheduleId = deviceSchedule.schedule.id,
+                                dateInitial = deviceSchedule.schedule.date_initial
                             )
                         )
                     }
@@ -301,7 +315,8 @@ class SchedulesActivity : AppCompatActivity() {
                                 action = false,
                                 deviceId = deviceSchedule.device.id,
                                 userId = deviceSchedule.device.user_id,
-                                scheduleId = deviceSchedule.schedule.id
+                                scheduleId = deviceSchedule.schedule.id,
+                                dateInitial = deviceSchedule.schedule.date_initial
                             )
                         )
                     }

@@ -51,7 +51,8 @@ class AndroidAlarmScheduler(
                                 action = true,
                                 deviceId = item.device.id,
                                 userId = item.device.user_id,
-                                scheduleId = item.schedule.id
+                                scheduleId = item.schedule.id,
+                                dateInitial = item.schedule.date_initial
                             )
                             schedule(alarmItemOn, true)
                         }
@@ -68,7 +69,8 @@ class AndroidAlarmScheduler(
                                 action = false,
                                 deviceId = item.device.id,
                                 userId = item.device.user_id,
-                                scheduleId = item.schedule.id
+                                scheduleId = item.schedule.id,
+                                dateInitial = item.schedule.date_initial
                             )
                             schedule(alarmItemOff, true)
                         }
@@ -101,7 +103,8 @@ class AndroidAlarmScheduler(
                                 action = true,
                                 deviceId = item.device.id,
                                 userId = item.device.user_id,
-                                scheduleId = item.schedule.id
+                                scheduleId = item.schedule.id,
+                                dateInitial = item.schedule.date_initial
                             )
                             cancel(alarmItemOn)
                         }
@@ -118,7 +121,8 @@ class AndroidAlarmScheduler(
                                 action = false,
                                 deviceId = item.device.id,
                                 userId = item.device.user_id,
-                                scheduleId = item.schedule.id
+                                scheduleId = item.schedule.id,
+                                dateInitial = item.schedule.date_initial
                             )
                             cancel(alarmItemOff)
                         }
@@ -150,7 +154,8 @@ class AndroidAlarmScheduler(
                             action = true,
                             deviceId = item.device.id,
                             userId = item.device.user_id,
-                            scheduleId = item.schedule.id
+                            scheduleId = item.schedule.id,
+                            dateInitial = item.schedule.date_initial
                         )
                         schedule(alarmItemOn, true)
                     }
@@ -167,7 +172,8 @@ class AndroidAlarmScheduler(
                             action = false,
                             deviceId = item.device.id,
                             userId = item.device.user_id,
-                            scheduleId = item.schedule.id
+                            scheduleId = item.schedule.id,
+                            dateInitial = item.schedule.date_initial
                         )
                         schedule(alarmItemOff, true)
                     }
@@ -196,7 +202,8 @@ class AndroidAlarmScheduler(
                             action = true,
                             deviceId = item.device.id,
                             userId = item.device.user_id,
-                            scheduleId = item.schedule.id
+                            scheduleId = item.schedule.id,
+                            dateInitial = item.schedule.date_initial
                         )
                         cancel(alarmItemOn)
                     }
@@ -213,7 +220,8 @@ class AndroidAlarmScheduler(
                             action = false,
                             deviceId = item.device.id,
                             userId = item.device.user_id,
-                            scheduleId = item.schedule.id
+                            scheduleId = item.schedule.id,
+                            dateInitial = item.schedule.date_initial
                         )
                         cancel(alarmItemOff)
                     }
@@ -229,19 +237,32 @@ class AndroidAlarmScheduler(
         var initialTime = -1L
         var nextTime = -1L
 
+        initialTime = timecalc.calculateInitialDelay(item.time["hour"] as Int,item.time["minute"] as Int)
+
         if(item.frequency != null){
             if (item.frequency == 24)
             {
                 nextTime = timecalc.calculateNextFrequency(System.currentTimeMillis(), item.frequency)
+                Log.d("MainActivity2", "[1H => INITIAL]: ${nextTime}")
             }
             else
             {
-                nextTime = timecalc.calculateNextSchedule(item.time["hour"] as Int, item.time["minute"] as Int, item.frequency)
+                if (item.dateInitial != null){
+                    if (System.currentTimeMillis() > item.dateInitial){
+                        // initialTime = timecalc.calculateNextSchedule(item.time["hour"] as Int, item.time["minute"] as Int, item.frequency)
+                        initialTime = timecalc.calculateNextScheduleWithDateInitial(item.dateInitial, item.frequency)
+                        nextTime = timecalc.calculateNextScheduleWithDateInitial(item.dateInitial, item.frequency)
+                        Log.d("MainActivity2", "Already Initiated: ${initialTime}")
+                    } else {
+                        // nextTime = timecalc.calculateNextFrequency(System.currentTimeMillis(), item.frequency)
+                        initialTime = timecalc.calculateInitialDelay(item.time["hour"] as Int,item.time["minute"] as Int)
+                        nextTime = timecalc.calculateNextScheduleWithDateInitial(item.dateInitial, item.frequency)
+                        Log.d("MainActivity2", "Not yet initiated: ${initialTime}")
+                    }
+                }
             }
             //val nextTime = calculateNextSchedule(item.time["hour"] as Int, item.time["minute"] as Int, item.frequency)
         }
-
-        initialTime = timecalc.calculateInitialDelay(item.time["hour"] as Int,item.time["minute"] as Int)
 
         val intent = Intent(context, AlarmReceiver::class.java).apply {
             putExtra("FREQUENCY", item.frequency)
@@ -254,12 +275,13 @@ class AndroidAlarmScheduler(
             putExtra("DEVICE_ID", item.deviceId as Long)
             putExtra("USER_ID", item.userId)
             putExtra("SCHEDULE_ID", item.scheduleId)
+            putExtra("INITIAL_DATE", item.dateInitial)
         }
 
         Log.i("MainActivity2","${item.toString()}:${isInitial.toString()}")
 
-        val timeToSet = if (isInitial == true) initialTime else nextTime
-        Log.w("MainActivity2","Time of next Execution (EPOX): ${timeToSet.toString()}")
+        var timeToSet = if (isInitial == true) initialTime else nextTime
+        Log.w("MainActivity2","Time of next Execution (EPOX): ${timeToSet.toString()} (${if (isInitial) "INITIAL" else "INTERVALED"})")
 
             alarmManager.setAlarmClock(
                 AlarmManager.AlarmClockInfo(

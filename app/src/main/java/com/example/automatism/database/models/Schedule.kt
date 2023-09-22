@@ -30,7 +30,7 @@ data class Schedule(
     var hour_off: Int? = null,
     @SerializedName("frequency")
     var frequency: Int?,
-    @SerializedName("dateInitial")
+    @SerializedName("date_initial")
     var date_initial: Long? = null,
     @SerializedName("statusOn")
     var status_on: Boolean = false,
@@ -45,6 +45,7 @@ data class Schedule(
         return mapOf(
             "id" to id,
             "name" to name,
+            "date_initial" to date_initial,
             "minute_on" to minute_on,
             "hour_on" to hour_on,
             "minute_off" to minute_off,
@@ -65,7 +66,8 @@ data class Schedule(
                 hour_off = map["hour_off"] as Int?,
                 frequency = map["frequency"] as Int?,
                 device = map["device"] as Long,
-                activated = map["activated"] as Boolean
+                activated = map["activated"] as Boolean,
+                date_initial = map["date_initial"] as Long?
             )
         }
     }

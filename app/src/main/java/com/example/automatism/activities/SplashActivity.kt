@@ -36,7 +36,9 @@ class SplashActivity : AppCompatActivity() {
             runBlocking{
                 Scheduler.deinitialize()
                 delay(1000)
-                Scheduler.initialize(user_id)
+                if (user_id != -1L){
+                    Scheduler.initialize(user_id)
+                }
             }
             // To display the splash screen for a certain duration before redirecting
             Handler(Looper.getMainLooper()).postDelayed({

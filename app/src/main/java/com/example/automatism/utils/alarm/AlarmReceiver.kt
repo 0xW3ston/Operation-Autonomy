@@ -43,53 +43,60 @@ class AlarmReceiver : BroadcastReceiver() {
         val userID = intent?.getLongExtra("USER_ID",-1L)
         val scheduleId = intent?.getLongExtra("SCHEDULE_ID", -1L)
         val isMissed = intent?.getBooleanExtra("IS_MISSED", false)
+        val dateInitial = intent?.getLongExtra("INITIAL_DATE", -1L);
 
         try {
             Log.d("MainActivity2","$scheduleId")
-            if (action == true) {
-                scope.launch(Dispatchers.IO) {
-                    // val deviceInfo = deviceDao.getDeviceById(deviceID!!)
-                    SMSManager.sendSMS(telephone!!, messageOn!!)
-                    scheduleDao.updateScheduleStatuses(scheduleId!!, statusOn = true, statusOff = false)
-                    deviceDao.updateDeviceStatus(deviceID!!,true)
-                    if(myPreferences.getBoolean("USER_ACTIVE",false) == true && myPreferences.getLong("CURRENT_USER_ID",-1L) == userID){
-                        val change_status = RetrofitInstance.api.setDeviceStatus(
-                            deviceID,
-                            myPreferences.getString("jwt","")!!,
-                            mapOf(
-                                "status" to true
+            scope.launch(Dispatchers.IO) {
+                if (action == true) {
+                        // val deviceInfo = deviceDao.getDeviceById(deviceID!!)
+                        SMSManager.sendSMS(telephone!!, messageOn!!)
+                        scheduleDao.updateScheduleStatuses(scheduleId!!, statusOn = true, statusOff = false)
+                        deviceDao.updateDeviceStatus(deviceID!!,true)
+                        if(myPreferences.getBoolean("USER_ACTIVE",false) == true && myPreferences.getLong("CURRENT_USER_ID",-1L) == userID){
+                            val change_status = RetrofitInstance.api.setDeviceStatus(
+                                deviceID,
+                                myPreferences.getString("jwt","")!!,
+                                mapOf(
+                                    "status" to true
+                                )
                             )
-                        )
-                    }
-                }
-            } else {
-                scope.launch(Dispatchers.IO) {
+                        }
+                } else {
                     // val deviceInfo = deviceDao.getDeviceById(deviceID!!)
                     SMSManager.sendSMS(telephone!!, messageOff!!)
-                    scheduleDao.updateScheduleStatuses(scheduleId!!, statusOn = false, statusOff = false)
-                    deviceDao.updateDeviceStatus(deviceID!!,false)
+                    scheduleDao.updateScheduleStatuses(
+                        scheduleId!!,
+                        statusOn = false,
+                        statusOff = false
+                    )
+                    deviceDao.updateDeviceStatus(deviceID!!, false)
                     Log.d(
                         "MainActivity2",
                         "${action.toString()} Alarm Triggered: $messageOn => $telephone"
                     )
-                    if(myPreferences.getBoolean("USER_ACTIVE",false) == true && myPreferences.getLong("CURRENT_USER_ID",-1L) == userID){
+                    if (myPreferences.getBoolean("USER_ACTIVE", false) == true && myPreferences.getLong(
+                            "CURRENT_USER_ID",
+                            -1L
+                        ) == userID
+                    ) {
                         val change_status = RetrofitInstance.api.setDeviceStatus(
                             deviceID,
-                            myPreferences.getString("jwt","")!!,
+                            myPreferences.getString("jwt", "")!!,
                             mapOf(
                                 "status" to false
                             )
                         )
-                        if(frequency == null || frequency == -1) {
-                            val change_is_activated = RetrofitInstance.api.setIsActivated(
-                                reglageId = scheduleId,
-                                authToken = myPreferences.getString("jwt","")!!,
-                                requestBody = mapOf(
-                                    "isActivated" to false
-                                )
-                            )
-                        }
                     }
+                }
+                if(frequency == null || frequency == -1) {
+                    val change_is_activated = RetrofitInstance.api.setIsActivated(
+                        reglageId = scheduleId,
+                        authToken = myPreferences.getString("jwt","")!!,
+                        requestBody = mapOf(
+                            "isActivated" to false
+                        )
+                    )
                 }
             }
         } catch (e: Exception) {
@@ -119,7 +126,6 @@ class AlarmReceiver : BroadcastReceiver() {
         }
 
         if(frequency == -1 || frequency == null) {
-            if(action == false) {
                 scope.launch(Dispatchers.IO) {
                     var schedule1 = scheduleDao.getScheduleById(scheduleId!!)
                     var modified_Device = schedule1
@@ -127,7 +133,6 @@ class AlarmReceiver : BroadcastReceiver() {
                     Log.d("MainActivity2","Updating One-Time Row")
                     scheduleDao.updateSchedule(modified_Device)
                 }
-            }
             shouldExit = true
         }
 
@@ -149,7 +154,8 @@ class AlarmReceiver : BroadcastReceiver() {
                 action = action!!,
                 deviceId = deviceID!!,
                 userId = userID!!,
-                scheduleId = scheduleId!!
+                scheduleId = scheduleId!!,
+                dateInitial = dateInitial
             ),
             isInitial = false
         )
