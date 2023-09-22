@@ -102,19 +102,8 @@ class ModifyScheduleActivity : AppCompatActivity() {
                 override fun onStopTrackingTouch(seekBar: SeekBar?) {}
             }) */
 
-            lifecycleScope.launch(Dispatchers.IO) {
-                // Populate deviceComboBox with device names (replace with actual data)
-                devicesList = deviceDao.getAllDevices()
-                val deviceNames = devicesList.map { it.name }
-                val adapter = ArrayAdapter(
-                    this@ModifyScheduleActivity,
-                    android.R.layout.simple_spinner_item,
-                    deviceNames
-                )
-                binding.modifyDeviceComboBox.adapter = adapter
-            }
-
             val scheduleId = intent.getLongExtra("schedule_id", -1L)
+            val deviceId = intent.getLongExtra("device_id", -1L)
             if (scheduleId != -1L) {
                 lifecycleScope.launch(Dispatchers.IO) {
                     scheduleDevice = scheduleDao.getScheduleAndDeviceByScheduleId(scheduleId)
@@ -130,11 +119,6 @@ class ModifyScheduleActivity : AppCompatActivity() {
                         }
 
                         binding.modifyEditTextName.setText(schedule.name)
-                        val selectedDeviceIndex =
-                            devicesList.indexOfFirst { it.id == schedule.device }
-                        if (selectedDeviceIndex != -1) {
-                            binding.modifyDeviceComboBox.setSelection(selectedDeviceIndex)
-                        }
                         binding.modifyEditTextHourOn.setText(schedule.hour_on.toString())
                         binding.modifyEditTextMinuteOn.setText(schedule.minute_on.toString())
                         binding.modifyEditTextHourOff.setText(schedule.hour_off.toString())
@@ -153,7 +137,6 @@ class ModifyScheduleActivity : AppCompatActivity() {
                 val schedule = scheduleDevice.schedule
                 val device = scheduleDevice.device
                 val name = binding.modifyEditTextName.text.toString()
-                val deviceId = devicesList[(binding.modifyDeviceComboBox.selectedItemId).toInt()].id
                 val hourOn = binding.modifyEditTextHourOn.text.toString().toInt()
                 val minuteOn = binding.modifyEditTextMinuteOn.text.toString().toInt()
                 val hourOff = binding.modifyEditTextHourOff.text.toString().toInt()

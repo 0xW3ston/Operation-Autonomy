@@ -65,15 +65,6 @@ class AddScheduleActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         }) */
 
-        lifecycleScope.launch(Dispatchers.IO){
-            // Populate deviceComboBox with device names (replace with actual data)
-            val current_user = myPreferences.getLong("CURRENT_USER_ID", -1L)
-            devicesList = deviceDao.getAllDevicesByUserId(current_user)
-            val deviceNames = devicesList.map { it.name }
-            val adapter = ArrayAdapter(this@AddScheduleActivity, android.R.layout.simple_spinner_item, deviceNames)
-            binding.deviceComboBox.adapter = adapter
-        }
-
         /* binding.checkboxFrequency.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 binding.frequencySlider.visibility = View.GONE
@@ -83,10 +74,10 @@ class AddScheduleActivity : AppCompatActivity() {
         } */
 
         // Implement the logic to save the schedule and handle the submit button click event here.
+        val deviceId = intent.getLongExtra("device_id", -1L)
         binding.btnSubmit.setOnClickListener {
             // val id = binding.editTextId.text.toString().toLong()
             val name = binding.editTextName.text.toString()
-            val deviceId = devicesList[(binding.deviceComboBox.selectedItemId).toInt()].id // The selected device ID
             val hourOn = binding.editTextHourOn.text.toString().toInt()
             val minuteOn = binding.editTextMinuteOn.text.toString().toInt()
             val hourOff = binding.editTextHourOff.text.toString().toInt()
