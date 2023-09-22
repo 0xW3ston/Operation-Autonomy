@@ -42,7 +42,7 @@ class AddScheduleActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         val Scheduler = AndroidAlarmScheduler(this)
-
+        val deviceId = intent.getLongExtra("device_id", -1L)
         // Database
         database = AppDatabase.getInstance(this)
         val deviceDao = database.deviceDao()
@@ -68,10 +68,6 @@ class AddScheduleActivity : AppCompatActivity() {
         lifecycleScope.launch(Dispatchers.IO){
             // Populate deviceComboBox with device names (replace with actual data)
             val current_user = myPreferences.getLong("CURRENT_USER_ID", -1L)
-            devicesList = deviceDao.getAllDevicesByUserId(current_user)
-            val deviceNames = devicesList.map { it.name }
-            val adapter = ArrayAdapter(this@AddScheduleActivity, android.R.layout.simple_spinner_item, deviceNames)
-            binding.deviceComboBox.adapter = adapter
 
             // Create an array of action options and their corresponding values
             val actionOptions = arrayOf("Turn Off", "Turn On")
@@ -96,8 +92,6 @@ class AddScheduleActivity : AppCompatActivity() {
         binding.btnSubmit.setOnClickListener {
             // val id = binding.editTextId.text.toString().toLong()
             val name = binding.editTextName.text.toString()
-            val deviceId = devicesList[(binding.deviceComboBox.selectedItemId).toInt()].id // The selected device ID
-
             val hourInput = binding.editTextHour.text.toString().toInt()
             val minuteInput = binding.editTextMinute.text.toString().toInt()
 

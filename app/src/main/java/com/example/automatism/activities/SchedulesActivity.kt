@@ -257,6 +257,7 @@ class SchedulesActivity : AppCompatActivity() {
             try {
                 Intent(context, ModifyScheduleActivity::class.java).also {
                     it.putExtra("schedule_id", schedule.id)
+                    it.putExtra("device_id", schedule.device)
                     context.startActivity(it)
                 }
             } catch (e: Exception) {

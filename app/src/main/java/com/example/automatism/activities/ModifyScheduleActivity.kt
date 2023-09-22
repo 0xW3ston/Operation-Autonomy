@@ -92,15 +92,6 @@ class ModifyScheduleActivity : AppCompatActivity() {
             }) */
 
             lifecycleScope.launch(Dispatchers.IO) {
-                // Populate deviceComboBox with device names (replace with actual data)
-                devicesList = deviceDao.getAllDevices()
-                val deviceNames = devicesList.map { it.name }
-                val adapter = ArrayAdapter(
-                    this@ModifyScheduleActivity,
-                    android.R.layout.simple_spinner_item,
-                    deviceNames
-                )
-                binding.modifyDeviceComboBox.adapter = adapter
                 // Create an array of action options and their corresponding values
                 val actionOptions = arrayOf("Turn Off", "Turn On")
                 val actionValues = intArrayOf(0, 1)
@@ -113,6 +104,8 @@ class ModifyScheduleActivity : AppCompatActivity() {
             }
 
             val scheduleId = intent.getLongExtra("schedule_id", -1L)
+            val deviceId = intent.getLongExtra("device_id", -1L)
+
             if (scheduleId != -1L) {
                 lifecycleScope.launch(Dispatchers.IO) {
                     scheduleDevice = scheduleDao.getScheduleAndDeviceByScheduleId(scheduleId)
@@ -128,11 +121,6 @@ class ModifyScheduleActivity : AppCompatActivity() {
                         }
 
                         binding.modifyEditTextName.setText(schedule.name)
-                        val selectedDeviceIndex =
-                            devicesList.indexOfFirst { it.id == schedule.device }
-                        if (selectedDeviceIndex != -1) {
-                            binding.modifyDeviceComboBox.setSelection(selectedDeviceIndex)
-                        }
                         binding.modifyEditTextHour.setText(if (schedule.hour_on != null) schedule.hour_on.toString() else schedule.hour_off.toString())
                         binding.modifyEditTextMinute.setText(if (schedule.minute_on != null) schedule.minute_on.toString() else schedule.minute_off.toString())
                         // TODO("Fix This, The Frequency can be set to null or it can be an Int")
@@ -158,7 +146,6 @@ class ModifyScheduleActivity : AppCompatActivity() {
                 val schedule = scheduleDevice.schedule
                 val device = scheduleDevice.device
                 val name = binding.modifyEditTextName.text.toString()
-                val deviceId = devicesList[(binding.modifyDeviceComboBox.selectedItemId).toInt()].id
                 val hour = binding.modifyEditTextHour.text.toString().toInt()
                 val minute = binding.modifyEditTextMinute.text.toString().toInt()
 

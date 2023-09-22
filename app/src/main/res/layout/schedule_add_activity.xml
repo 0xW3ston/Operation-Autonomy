@@ -65,21 +65,11 @@
     </com.google.android.material.textfield.TextInputLayout>
 
     <Spinner
-        android:id="@+id/deviceComboBox"
-        android:layout_width="0dp"
-        android:layout_height="40dp"
-        android:hint="Select Device"
-        app:layout_constraintTop_toBottomOf="@id/minuteInputLayout"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="8dp" />
-
-    <Spinner
         android:id="@+id/actionSpinner"
         android:layout_width="0dp"
         android:layout_height="40dp"
         android:hint="Select Action"
-        app:layout_constraintTop_toBottomOf="@id/deviceComboBox"
+        app:layout_constraintTop_toBottomOf="@id/minuteInputLayout"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="8dp" />
