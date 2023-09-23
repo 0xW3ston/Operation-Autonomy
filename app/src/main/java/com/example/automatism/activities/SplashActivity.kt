@@ -28,23 +28,37 @@ class SplashActivity : AppCompatActivity() {
         Log.d("MainActivity2", "onCreate of Splash Activity")
         // myPreferences = this.getSharedPreferences("MyPreferences", Context.MODE_PRIVATE)
             val Scheduler = AndroidAlarmScheduler(this)
+            Log.d("MainActivity2", "second")
             val user_id = this.getSharedPreferences("MyPreferences", Context.MODE_PRIVATE).getLong("CURRENT_USER_ID", -1L)
+            Log.d("MainActivity2", "third")
             val authHelper = AuthHelper(this)
+            Log.d("MainActivity2", "fourth")
 
         //var current_user_id = myPreferences.getLong("CURRENT_USER_ID", -1L)
         lifecycleScope.launch(Dispatchers.IO) {
-            runBlocking{
-                Scheduler.deinitialize()
-                delay(1000)
-                Scheduler.initialize(user_id)
+            Log.d("MainActivity2", "fifth")
+            try {
+                runBlocking {
+                    Log.d("MainActivity2", "sixth")
+                    Scheduler.deinitialize()
+                    Log.d("MainActivity2", "seventh")
+                    Log.d("MainActivity2", "seventh-extra")
+                    if (user_id != -1L) {
+                        Scheduler.initialize(user_id)
+                    }
+                    Log.d("MainActivity2", "eigth")
+                }
+            } catch (e: Exception) {
+                Log.e("MainActivity2","There is an issue in initiating on Splash")
             }
             // To display the splash screen for a certain duration before redirecting
             Handler(Looper.getMainLooper()).postDelayed({
+                Log.d("MainActivity2", "ninth")
                 // Check if the user is logged in (you can use SharedPreferences or any other authentication mechanism)
                 // val sharedPreferences = getSharedPreferences("my_preferences", Context.MODE_PRIVATE)
                 // val isAdmin = sharedPreferences.getBoolean("admin", false)
                 try {
-
+                    Log.d("MainActivity2", "eleventh")
                     // Decide which activity to redirect the user to based on the login status
                     val redirectActivityClass = if (authHelper.isLoggedIn()) {
                         DevicesActivity::class.java

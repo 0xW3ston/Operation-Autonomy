@@ -158,7 +158,7 @@ class SchedulesActivity : AppCompatActivity() {
                 val frequency = (if ((schedule["frequency"] as Number).toInt() == 0) null else (schedule["frequency"] as Number).toInt())
                 val isActivatedRaw = scheduleDao.getIsActivatedStatusById((schedule["id"]!! as Number).toLong())
                 val isActivatedLocal = (if (isActivatedRaw != null) isActivatedRaw else true)
-                val isActivatedOnline = schedule["isActivated"] as Boolean
+                val isActivatedOnline = if (schedule["isActivated"] != null) (schedule["isActivated"] as Boolean) else true
                 val isActivated = (if (isActivatedLocal == false || isActivatedOnline == false) false else true)
 
 
