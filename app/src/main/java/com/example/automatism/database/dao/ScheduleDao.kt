@@ -14,8 +14,8 @@ interface ScheduleDao {
     @Query("SELECT *,telephone FROM schedules INNER JOIN devices ON schedules.device = devices.id")
     suspend fun getAllSchedules(): List<Schedule>
 
-    @Query("SELECT * FROM schedules WHERE id = :scheduleId")
-    suspend fun getScheduleById(scheduleId: Long): Schedule
+    @Query("SELECT * FROM schedules WHERE id = :scheduleId LIMIT 1")
+    fun getScheduleById(scheduleId: Long): Schedule
 
     @Query("SELECT * FROM schedules WHERE device = :deviceId")
     suspend fun getSchedulesByDeviceId(deviceId: Long): List<Schedule>
@@ -44,8 +44,8 @@ interface ScheduleDao {
     @Delete
     suspend fun deleteSchedule(schedule: Schedule)
 
-    @Query("DELETE FROM schedules WHERE id NOT IN (:idList)")
-    suspend fun deleteSchedulesByNotInIds(idList: List<Long?>?)
+    @Query("DELETE FROM schedules WHERE device = :deviceId NOT IN (:idList)")
+    suspend fun deleteSchedulesByDeviceIdNotInIds(deviceId: Long, idList: List<Long?>?)
 
     @Upsert
     suspend fun upsertSchedule(schedule: Schedule): Long

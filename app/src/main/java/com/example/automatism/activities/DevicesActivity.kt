@@ -34,6 +34,7 @@ import com.example.automatism.database.dao.DeviceDao
 import com.example.automatism.database.dao.ScheduleDao
 import com.example.automatism.database.models.Device
 import com.example.automatism.database.models.Schedule
+import com.example.automatism.database.models.ScheduleDevice
 import com.example.automatism.databinding.DevicesActivityBinding
 import com.example.automatism.utils.AuthHelper
 import com.example.automatism.utils.RetrofitInstance
@@ -55,8 +56,10 @@ class DevicesActivity : AppCompatActivity() {
     private lateinit var deviceAdapter: DeviceAdapter
     private var dataList: MutableList<Device> = mutableListOf()
     private lateinit var database: AppDatabase
+    private lateinit var sscheduleDao: ScheduleDao
     private lateinit var myPreferences: SharedPreferences
     private lateinit var Scheduler: AndroidAlarmScheduler
+    private var schedulesList: List<ScheduleDevice> = emptyList()
     private var timecalc: TimeCalculationClass = TimeCalculationClass
 
 
@@ -75,14 +78,16 @@ class DevicesActivity : AppCompatActivity() {
         authHelper = AuthHelper(this)
 
         myPreferences = this.getSharedPreferences("MyPreferences", Context.MODE_PRIVATE)
+        val current_user = myPreferences.getLong("CURRENT_USER_ID", -1L)
 
         database = AppDatabase.getInstance(this)
-        val deviceDao = database.deviceDao()
+        sscheduleDao = database.scheduleDao()
 
         deviceAdapter = DeviceAdapter(this, dataList)
         binding.devicesListview.adapter = deviceAdapter
 
         lifecycleScope.launch(Dispatchers.IO) {
+            schedulesList = database.scheduleDao().getAllScheduleAndDevicesByUserId(userId = current_user)
             runOnUiThread {
                 SMSManager.requestSMSPermission(this@DevicesActivity)
             }
@@ -119,16 +124,18 @@ class DevicesActivity : AppCompatActivity() {
             runBlocking {
                 try{
                     fetchNewDevices()
+                    Log.e("MainActivity2", "Problem in here (first)")
                 } catch (e: Exception) {
                     Log.e("MainActivity2","error in Fetching devices (onCreate)")
                 }
-                if(myPreferences.getBoolean("USER_ACTIVE",false)){
+                /* if(myPreferences.getBoolean("USER_ACTIVE",false)){
                     try{
+                        Log.e("MainActivity2","Problem in here (first-half)")
                         fetchNewSchedulesOfAllDevicesByUserId()
                     } catch (e: Exception){
                         Log.e("MainActivity2","error in onCreate FOR USER ACTIVE: $e")
                     }
-                }
+                } */
             }
             try {
                 runOnUiThread {
@@ -151,10 +158,10 @@ class DevicesActivity : AppCompatActivity() {
         when(item.itemId) {
             R.id.oRefresh -> {
                 try {
-                    var numberX = Random.nextLong(from = 1000L, until = 1000000L)
                     lifecycleScope.launch {
                         try {
                             fetchNewDevices()
+                            Log.e("MainActivity2","Problem in here (second)")
                         } catch (e: Exception) {
                             Log.e("MainActivity2", "Exception: $e")
                         }
@@ -325,111 +332,6 @@ class DevicesActivity : AppCompatActivity() {
 
             status_button_on.setOnClickListener(statusButtonListener)
             status_button_off.setOnClickListener(statusButtonListener)
-
-            /* status_button.setOnCheckedChangeListener { _, isChecked ->
-                val all_tags = status_button.tag as? Device
-                val device_id = all_tags?.id
-                Log.d("MainActivity2","the id is $device_id : ${isChecked.toString()}")
-                // (mContext as AppCompatActivity).runOnUiThread {
-                    // status_button.setTextColor(
-                    //     if (all_tags!!.status == false)
-                    //          ContextCompat.getColor(mContext, R.color.green)
-                    //     else
-                    //         ContextCompat.getColor(mContext, R.color.red)
-                    // )
-                // }
-                // Disable the button and update its status
-                status_button.isEnabled = false
-
-                try {
-                    if(all_tags!!.status){
-                        SMSManager.sendSMS(all_tags.telephone,all_tags.msg_off)
-                    } else {
-                        SMSManager.sendSMS(all_tags.telephone,all_tags.msg_on)
-                    }
-                    (mContext as AppCompatActivity).lifecycleScope.launch(Dispatchers.IO) {
-                        Log.d("MainActivity2","Global Scope update status")
-                        deviceDao.updateDeviceStatus(all_tags.id,status_button.isChecked)
-                        // If false (it will be True) donc Green, if true (it will be False) donc Red
-
-                        delay(10000) // Delay for 10 seconds
-                        (mContext as AppCompatActivity).runOnUiThread {
-                            status_button.isEnabled = true // Re-enable the button
-                        }
-                        runBlocking {
-                            updateData()
-                        }
-                    }
-
-                } catch (e: Exception){
-                    Toast.makeText(mContext,"Error: $e", Toast.LENGTH_SHORT).show()
-                }
-                status_button.text = if (status_button.isChecked) "On" else "Off"
-            } */
-
-            // TODO("REMOVED THIS / OR RATHER DESACTIVATED")
-            /* status_button.setOnClickListener {
-                val all_tags = status_button.tag as? Device
-                val device_id = all_tags?.id
-                Log.d("MainActivity2","the id is $device_id : ${all_tags?.status}")
-                /*(mContext as AppCompatActivity).runOnUiThread {
-                    status_button.setTextColor(
-                        if (all_tags!!.status == false)
-                             ContextCompat.getColor(mContext, R.color.green)
-                        else
-                            ContextCompat.getColor(mContext, R.color.red)
-                    )
-                }*/
-                // Disable the button and update its status
-                status_button.setBackgroundColor(ContextCompat.getColor(mContext, R.color.gray))
-                status_button.isEnabled = false
-
-                try {
-                    if(all_tags!!.status){
-                        SMSManager.sendSMS(all_tags.telephone,all_tags.msg_off)
-                    } else {
-                        SMSManager.sendSMS(all_tags.telephone,all_tags.msg_on)
-                    }
-
-                    Log.d("MainActivity2","Test ${all_tags.status}")
-                    (mContext as AppCompatActivity).lifecycleScope.launch(Dispatchers.IO) {
-                        try{
-                            Log.d("MainActivity2","Global Scope update status")
-                            deviceDao.updateDeviceStatus(all_tags.id,!(all_tags.status))
-                            // If false (it will be True) donc Green, if true (it will be False) donc Red
-                            delay(10000) // Delay for 10 seconds
-                            (mContext as AppCompatActivity).runOnUiThread {
-                                status_button.isEnabled = true // Re-enable the button
-                                //status_button.setBackgroundColor(if (all_tags.status) ContextCompat.getColor(mContext, R.color.green) else ContextCompat.getColor(mContext, R.color.red))
-                            }
-                            runBlocking {
-                                updateData()
-                            }
-                            if(my_prefs.getBoolean("USER_ACTIVE",false)){
-                                var api = RetrofitInstance.api.setDeviceStatus(
-                                    idDevice = mDataList[position].id,
-                                    authToken = my_prefs.getString("jwt","")!!,
-                                    requestBody = mapOf(
-                                        "status" to !(all_tags!!.status)
-                                    )
-                                )
-                            }
-                        } catch(e: Exception) {
-                            Log.e("MainActivity2","error: $e")
-                            (mContext as AppCompatActivity).runOnUiThread {
-                                Toast.makeText(mContext,"Error: $e", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    }
-
-                } catch (e: Exception){
-                    Log.e("MainActivity2","error: $e")
-                    (mContext as AppCompatActivity).runOnUiThread {
-                        Toast.makeText(mContext,"Error: $e", Toast.LENGTH_SHORT).show()
-                    }
-                }
-                status_button.text = if (status_button.text == "Off") "On" else "Off"
-            } */
 
             overflowButton.setOnClickListener {
                 showOverflowMenu(it, position)
@@ -786,7 +688,7 @@ class DevicesActivity : AppCompatActivity() {
         deviceAdapter.updateData()
     }
 
-    suspend fun loadNewSchedules(schedules: List<Map<String,Any>>){
+    suspend fun loadNewSchedules(schedules: List<Map<String,Any>>, deviceId: Long){
 
         if (schedules.isEmpty())
         {
@@ -803,6 +705,7 @@ class DevicesActivity : AppCompatActivity() {
         Scheduler.deinitialize(current_user)
 
         // Step 2: Delete non-affected Devices despite having schedules
+        scheduleDao.deleteSchedulesByDeviceIdNotInIds(deviceId = deviceId, idList = listIds)
         // scheduleDao.deleteSchedulesByNotInIds(listIds)
 
         allschedules = scheduleDao.getAllScheduleAndDevicesByUserId(current_user)
@@ -816,37 +719,53 @@ class DevicesActivity : AppCompatActivity() {
                 Log.i("MainActivity2","BBB:${(schedule["id"] as Number).toLong()}")
                 Log.i("MainActivity2","${schedule}")
 
+                var scheduleData: ScheduleDevice? = null;
+                try {
+                    scheduleData = schedulesList.first { scheduleDevice -> scheduleDevice.schedule.id == (schedule["id"] as Double).toLong() }
+                } catch (e: Exception) {
+
+                }
+
                 val frequency = (if ((schedule["frequency"] as Number).toInt() == 0) null else (schedule["frequency"] as Number).toInt())
-                val isActivatedRaw = scheduleDao.getIsActivatedStatusById((schedule["id"]!! as Number).toLong())
+                val isActivatedRaw = if (scheduleData != null) scheduleData.schedule.activated else null
                 val isActivatedLocal = (if (isActivatedRaw != null) isActivatedRaw else true)
-                // TODO("FIX THIS LATER, ISACTIVATED IS ALWAYS TRUE HERE")
                 val isActivatedOnline = if (schedule["isActivated"] == null) true else (schedule["isActivated"] as Boolean)
                 val isActivated = (if (isActivatedLocal == false || isActivatedOnline == false) false else true)
 
-                Log.d("MainActivity2","isActivated: ${isActivatedRaw}, Real isActivated: ${isActivated}")
-                // TODO("DEVICE_ID is changed to ID (which is affecter_id")
+                Log.d("MainActivity2","[SCHEDULES PAGE]: isActivatedRaw: ${isActivatedRaw}, isActivatedLocal: ${isActivatedLocal}, isActivatedONLINE: ${isActivatedOnline}, Real isActivated: ${isActivated}")
 
-                val scheduleData = scheduleDao.getScheduleById((schedule["id"]!! as Number).toLong())
+                if (scheduleData == null)
+                {
+                    Log.e("MainActivity2","SCHEDULE DATA IS NULL ${(schedule["id"] as Double).toLong()} ${scheduleData}")
+                }
+                else
+                {
+                    Log.i("MainActivity2","SCHEDULE DATA IS NOT NULL ${(schedule["id"] as Double).toLong()}")
+                }
+                val DateInitial = if (scheduleData == null)
+                    timecalc.calculateInitialDelay(
+                        if (schedule["heure_on"] == null) (schedule["heure_off"] as Number).toInt() else (schedule["heure_on"] as Number).toInt(),
+                        if (schedule["minute_on"] == null) (schedule["minute_off"] as Number).toInt() else (schedule["minute_on"] as Number).toInt()
+                    )
+                else
+                    scheduleData.schedule.date_initial
 
-                val DateInitial = if (scheduleData != null) scheduleData.date_initial else timecalc.calculateInitialDelay(
-                    if (schedule["heure_on"] == null) (schedule["heure_off"] as Number).toInt() else (schedule["heure_on"] as Number).toInt(),
-                    if (schedule["minute_on"] == null) (schedule["minute_off"] as Number).toInt() else (schedule["minute_on"] as Number).toInt()
-                )
+                Log.e("MainActivity2","ADMIN-SCHEDULES-${scheduleData}")
 
-                Log.e("MainActivity2","ADMIN-${scheduleData}")
                 val structuredDeviceMap = mapOf<String,Any?>(
                     "id" to (schedule["id"]!! as Number).toLong(),
                     "name" to schedule["name"]!!,
                     "minute_on" to (if (schedule["minute_on"] == null) null else (schedule["minute_on"] as Number).toInt()),
                     "hour_on" to (if (schedule["heure_on"] == null) null else (schedule["heure_on"] as Number).toInt()),
                     "minute_off" to (if (schedule["minute_off"] == null) null else (schedule["minute_off"] as Number).toInt()),
-                    "hour_off" to (if (schedule["heure_on"] == null) null else (schedule["heure_on"] as Number).toInt()),
+                    "hour_off" to (if (schedule["heure_off"] == null) null else (schedule["heure_off"] as Number).toInt()),
                     "frequency" to frequency,
                     "device" to (schedule["affecter_id"]!! as Number).toLong(),
                     "activated" to isActivated,
                     "date_initial" to DateInitial
                 )
-                scheduleDao.upsertSchedule(Schedule.fromMap(structuredDeviceMap))
+
+                sscheduleDao.upsertSchedule(Schedule.fromMap(structuredDeviceMap))
             } catch (e: Exception) {
                 Log.e("MainActivity2","some error here in loading: $e")
             }
@@ -878,7 +797,7 @@ class DevicesActivity : AppCompatActivity() {
                     }
                     lifecycleScope.launch(Dispatchers.IO) {
                         try {
-                            loadNewSchedules(schedules = schedules!!)
+                            loadNewSchedules(schedules = schedules!!, deviceId = deviceId)
                         } catch (e: Exception) {
                             Log.e("MainActivity2","Loading Data Error: $e")
                         }

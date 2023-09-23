@@ -18,8 +18,10 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.automatism.R
 import com.example.automatism.database.AppDatabase
+import com.example.automatism.database.dao.ScheduleDao
 import com.example.automatism.database.models.Device
 import com.example.automatism.database.models.Schedule
+import com.example.automatism.database.models.ScheduleDevice
 import com.example.automatism.databinding.SchedulesActivityBinding
 import com.example.automatism.utils.RetrofitInstance
 import com.example.automatism.utils.TimeCalculationClass
@@ -36,8 +38,10 @@ class SchedulesActivity : AppCompatActivity() {
     private lateinit var scheduleAdapter: ScheduleAdapter
     private var dataList: MutableList<Schedule> = mutableListOf()
     private lateinit var database: AppDatabase
+    private lateinit var sscheduleDao: ScheduleDao
     private lateinit var Scheduler: AndroidAlarmScheduler
     private lateinit var myPreferences: SharedPreferences
+    private var schedulesList: List<ScheduleDevice> = emptyList()
     private var timecalc: TimeCalculationClass = TimeCalculationClass
 
 
@@ -52,9 +56,12 @@ class SchedulesActivity : AppCompatActivity() {
         binding = SchedulesActivityBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+
         Log.i("MainActivity2","${intent.getLongExtra("device_id", -1L)}")
 
         myPreferences = this.getSharedPreferences("MyPreferences", Context.MODE_PRIVATE)
+
+        val current_user = myPreferences.getLong("CURRENT_USER_ID", -1L)
 
         binding.fab.setOnClickListener {
             onAddButton()
@@ -62,7 +69,7 @@ class SchedulesActivity : AppCompatActivity() {
 
         // Database Configuration:
         database = AppDatabase.getInstance(this)
-        val scheduleDao = database.scheduleDao()
+        sscheduleDao = database.scheduleDao()
 
         // Alarm Scheduler Initialization:
         Scheduler = AndroidAlarmScheduler(this)
@@ -73,6 +80,7 @@ class SchedulesActivity : AppCompatActivity() {
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
+                schedulesList = database.scheduleDao().getAllScheduleAndDevicesByUserId(userId = current_user)
                 if(myPreferences.getBoolean("USER_ACTIVE",false)){
                     fetchNewSchedules()
                 }
@@ -121,7 +129,7 @@ class SchedulesActivity : AppCompatActivity() {
                 }
                 lifecycleScope.launch(Dispatchers.IO) {
                     try {
-                        loadNewSchedules(schedules = schedules!!)
+                        loadNewSchedules(schedules = schedules!!, deviceId = deviceId)
                     } catch (e: Exception) {
                         Log.e("MainActivity2","Loading Data Error: $e")
                     }
@@ -134,7 +142,7 @@ class SchedulesActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun loadNewSchedules(schedules: List<Map<String,Any>>){
+    private suspend fun loadNewSchedules(schedules: List<Map<String,Any>>, deviceId: Long){
         scheduleAdapter.updateData()
 
         val scheduleDao = database.scheduleDao()
@@ -147,7 +155,10 @@ class SchedulesActivity : AppCompatActivity() {
         Scheduler.deinitialize(current_user)
 
         // Step 2: Delete non-affected Devices despite having schedules
-        scheduleDao.deleteSchedulesByNotInIds(listIds)
+
+        scheduleDao.deleteSchedulesByDeviceIdNotInIds(deviceId = deviceId, idList = listIds)
+        Log.d("MainActivity2", "THE DELETED SCHEDULES: ${listIds}")
+        // scheduleDao.deleteSchedulesByNotInIds(listIds)
 
         // Step 3: Insert/Upsert (New) Devices
         for(schedule in schedules) {
@@ -157,37 +168,53 @@ class SchedulesActivity : AppCompatActivity() {
                 Log.i("MainActivity2","BBB:${(schedule["id"] as Number).toLong()}")
                 Log.i("MainActivity2","${schedule}")
 
+                var scheduleData: ScheduleDevice? = null;
+                try {
+                    scheduleData = schedulesList.first { scheduleDevice -> scheduleDevice.schedule.id == (schedule["id"] as Double).toLong() }
+                } catch (e: Exception) {
+
+                }
+
                 val frequency = (if ((schedule["frequency"] as Number).toInt() == 0) null else (schedule["frequency"] as Number).toInt())
-                val isActivatedRaw = scheduleDao.getIsActivatedStatusById((schedule["id"]!! as Number).toLong())
+                val isActivatedRaw = if (scheduleData != null) scheduleData.schedule.activated else null
                 val isActivatedLocal = (if (isActivatedRaw != null) isActivatedRaw else true)
                 val isActivatedOnline = if (schedule["isActivated"] == null) true else (schedule["isActivated"] as Boolean)
                 val isActivated = (if (isActivatedLocal == false || isActivatedOnline == false) false else true)
 
                 Log.d("MainActivity2","[SCHEDULES PAGE]: isActivatedRaw: ${isActivatedRaw}, isActivatedLocal: ${isActivatedLocal}, isActivatedONLINE: ${isActivatedOnline}, Real isActivated: ${isActivated}")
 
-                val scheduleData = scheduleDao.getScheduleById((schedule["id"]!! as Number).toLong())
+                    if (scheduleData == null)
+                    {
+                        Log.e("MainActivity2","SCHEDULE DATA IS NULL ${(schedule["id"] as Double).toLong()} ${scheduleData}")
+                    }
+                    else
+                    {
+                        Log.i("MainActivity2","SCHEDULE DATA IS NOT NULL ${(schedule["id"] as Double).toLong()}")
+                    }
+                    val DateInitial = if (scheduleData == null)
+                            timecalc.calculateInitialDelay(
+                                if (schedule["heure_on"] == null) (schedule["heure_off"] as Number).toInt() else (schedule["heure_on"] as Number).toInt(),
+                                if (schedule["minute_on"] == null) (schedule["minute_off"] as Number).toInt() else (schedule["minute_on"] as Number).toInt()
+                            )
+                        else
+                            scheduleData.schedule.date_initial
 
-                val DateInitial = if (scheduleData != null) scheduleData.date_initial else timecalc.calculateInitialDelay(
-                    if (schedule["heure_on"] == null) (schedule["heure_off"] as Number).toInt() else (schedule["heure_on"] as Number).toInt(),
-                    if (schedule["minute_on"] == null) (schedule["minute_off"] as Number).toInt() else (schedule["minute_on"] as Number).toInt()
-                )
+                    Log.e("MainActivity2","ADMIN-SCHEDULES-${scheduleData}")
 
-                Log.e("MainActivity2","ADMIN-SCHEDULES-${scheduleData}")
+                    val structuredDeviceMap = mapOf<String,Any?>(
+                        "id" to (schedule["id"]!! as Number).toLong(),
+                        "name" to schedule["name"]!!,
+                        "minute_on" to (if (schedule["minute_on"] == null) null else (schedule["minute_on"] as Number).toInt()),
+                        "hour_on" to (if (schedule["heure_on"] == null) null else (schedule["heure_on"] as Number).toInt()),
+                        "minute_off" to (if (schedule["minute_off"] == null) null else (schedule["minute_off"] as Number).toInt()),
+                        "hour_off" to (if (schedule["heure_off"] == null) null else (schedule["heure_off"] as Number).toInt()),
+                        "frequency" to frequency,
+                        "device" to (schedule["affecter_id"]!! as Number).toLong(),
+                        "activated" to isActivated,
+                        "date_initial" to DateInitial
+                    )
 
-                val structuredDeviceMap = mapOf<String,Any?>(
-                    "id" to (schedule["id"]!! as Number).toLong(),
-                    "name" to schedule["name"]!!,
-                    "minute_on" to (if (schedule["minute_on"] == null) null else (schedule["minute_on"] as Number).toInt()),
-                    "hour_on" to (if (schedule["heure_on"] == null) null else (schedule["heure_on"] as Number).toInt()),
-                    "minute_off" to (if (schedule["minute_off"] == null) null else (schedule["minute_off"] as Number).toInt()),
-                    "hour_off" to (if (schedule["heure_off"] == null) null else (schedule["heure_off"] as Number).toInt()),
-                    "frequency" to frequency,
-                    "device" to (schedule["affecter_id"]!! as Number).toLong(),
-                    "activated" to isActivated,
-                    "date_initial" to DateInitial
-                )
-
-                scheduleDao.upsertSchedule(Schedule.fromMap(structuredDeviceMap))
+                    sscheduleDao.upsertSchedule(Schedule.fromMap(structuredDeviceMap))
             } catch (e: Exception) {
                 Log.e("MainActivity2","some error here in loading: $e")
             }

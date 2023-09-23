@@ -252,12 +252,12 @@ class AndroidAlarmScheduler(
                         // initialTime = timecalc.calculateNextSchedule(item.time["hour"] as Int, item.time["minute"] as Int, item.frequency)
                         initialTime = timecalc.calculateNextScheduleWithDateInitial(item.dateInitial, item.frequency)
                         nextTime = timecalc.calculateNextScheduleWithDateInitial(item.dateInitial, item.frequency)
-                        Log.d("MainActivity2", "Already Initiated: ${initialTime}")
+                        Log.d("MainActivity2", "Already Initiated: ${item.dateInitial} next at ${initialTime}")
                     } else {
                         // nextTime = timecalc.calculateNextFrequency(System.currentTimeMillis(), item.frequency)
                         initialTime = timecalc.calculateInitialDelay(item.time["hour"] as Int,item.time["minute"] as Int)
                         nextTime = timecalc.calculateNextScheduleWithDateInitial(item.dateInitial, item.frequency)
-                        Log.d("MainActivity2", "Not yet initiated: ${initialTime}")
+                        Log.d("MainActivity2", "Not yet initiated: ${item.dateInitial} next at ${initialTime}")
                     }
                 }
             }
